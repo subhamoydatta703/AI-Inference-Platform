@@ -1,0 +1,65 @@
+import type { Request, Response, NextFunction } from "express";
+import { clerkClient, getAuth } from "@clerk/express";
+import { prisma } from "../config/db/db";
+import { CreatedUserSchema } from "../utils/validation/userValidation";
+
+export interface AuthenticatedRequest extends Request {
+  userId?: string;
+}
+
+/**
+ * Authenticates requests via Clerk JWT tokens and syncs new users to the local database.
+ */
+export async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Missing authentication credentials"
+      });
+    }
+
+    // Check if user exists in our DB
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    // If user does not exist in local DB, fetch details from Clerk and sync
+    if (!user) {
+      try {
+        const clerkUser = await clerkClient.users.getUser(userId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress || `${userId}@example.com`;
+
+        const validatedUser = CreatedUserSchema.parse({
+          id: userId,
+          email: email,
+        });
+
+        user = await prisma.user.upsert({
+          where: { id: userId }, create: validatedUser, update: {},
+        });
+        console.info("Synced new user from Clerk");
+      } catch (clerkErr) {
+        console.error("Failed to sync user from Clerk:", clerkErr);
+        // Fallback: create user with placeholder email to avoid blocking flow
+        const fallbackUser = CreatedUserSchema.parse({
+          id: userId,
+          email: `user_${userId}@placeholder.com`,
+        });
+        user = await prisma.user.upsert({
+          where: { id: userId }, create: fallbackUser, update: {},
+        });
+      }
+    }
+
+    req.userId = userId;
+    next();
+  } catch (error) {
+    console.error("Authentication middleware error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error in authentication"
+    });
+  }
+}
