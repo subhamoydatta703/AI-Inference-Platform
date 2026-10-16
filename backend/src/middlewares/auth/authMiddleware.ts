@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { clerkClient, getAuth } from "@clerk/express";
-import { prisma } from "../config/db/db";
-import { CreatedUserSchema } from "../utils/validation/userValidation";
+import { prisma } from "../../config/db/db";
+import { CreatedUserSchema } from "../../utils/validation/userValidation";
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;

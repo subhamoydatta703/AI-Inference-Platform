@@ -1,6 +1,6 @@
-import { createUserByIdAndEmail, getUserById } from "../services/user/userService";
+import { createUserByIdAndEmail, getUserById } from "../../services/user/userService";
 import { type Response } from "express";
-import { type AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { type AuthenticatedRequest } from "../../middlewares/auth/authMiddleware";
 import { clerkClient } from "@clerk/express";
 
 
@@ -46,7 +46,7 @@ export const getUserByIdController = async (req: AuthenticatedRequest, res: Resp
 
 
 
-// create user by id and email
+// create user by id and email(not required because it is already created by authMiddleware by clerk)
 export const createUserByIdAndEmailController = async (req: AuthenticatedRequest, res: Response) => {
 
 try {
