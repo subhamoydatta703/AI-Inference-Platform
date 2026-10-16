@@ -1,6 +1,7 @@
 import crypto from "node:crypto"
 import { prisma } from "../../config/db/db";
 import { success } from "zod";
+import { getUserById } from "../user/userService";
 
 
 
@@ -12,51 +13,63 @@ function generateApiKey() {
 
 
 // hash api key
-
-
 const hashApiKey = (apiKey: string) => {
     return crypto.createHash("sha256").update(apiKey).digest("hex");
 };
 
+export const updateApiKeyCount= async(userId: string)=>{
+  try {
+    
+  } catch (error) {
+    
+  }
+
+}
+
 
 // create api key
-
-const createApiKey = async (userId: string) => {
+export const createApiKeyService = async (userId: string) => {
 
     try {
-      // checking for existing apikey 
-        const existingApiKey = await prisma.apiKey.findFirst({where: {userId: userId}})
+      // get user data
+        const {success, data} = await getUserById(userId);
+         if(success && data){
+           // check the count of existing user's api key
+           const apiKeyCount =  data.count
+           if(apiKeyCount === 5){
+               return {
+                   success: false,
+                   message: "You already reached your limited api key quota"
+   
+               }
+           }
 
-        // check the count of existing api key
-        const apiKeyCount = existingApiKey?.count
+         }
 
-        if(apiKeyCount === 5){
-            return {
-                success: false,
-                message: "You already reached your limited api key quota"
+        
 
-            }
-        }
         const generatedApiKey = generateApiKey();
         const hashedApiKey = hashApiKey(generatedApiKey);
 
-            // If an API key exists, update its count; otherwise, create a new key with count 1.
-            await prisma.apiKey.upsert({
-              where:{
-                id: existingApiKey?.id,
-              },
-              update:{
-                hashedKey: hashedApiKey,
-                count:{
-                    increment:1
-                }
-              },
-              create:{
+            // create an api key for that user
+            await prisma.apiKey.create({
+              data:{
                 userId: userId,
-                hashedKey:hashedApiKey,
-                count:1
-              }
+                hashedKey: hashedApiKey,
 
+              }
+            })
+
+            // update apikey count
+            await prisma.user.update({
+              where: {
+                id: userId
+              },
+              data:{
+                count:{
+                  increment: 1
+                }
+              }
             })
         
             return {
@@ -75,4 +88,37 @@ const createApiKey = async (userId: string) => {
           data: null,
       };
     }
+}
+
+
+
+// delete api key
+
+export const deleteApiKeyService = async(userId: string)=>{
+  try {
+    const existingApiKey = await prisma.apiKey.findFirst({where: {userId: userId}})
+
+    
+    // delete api key from db
+    await prisma.apiKey.delete({
+      where:{
+        id: existingApiKey?.id,
+        userId: userId
+      }
+    })
+
+    // update api key count
+    await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data:{
+        count:{
+          decrement: 1
+        }
+      }
+    })
+  } catch (error) {
+    
+  }
 }
