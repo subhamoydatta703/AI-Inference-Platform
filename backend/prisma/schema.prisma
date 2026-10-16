@@ -12,6 +12,7 @@ model User {
   id         String     @id @default(uuid())
   email      String     @unique   
   createdAt  DateTime   @default(now())
+  count       Int        @default(0) 
   apiKey     apiKey[]
 }
 
@@ -20,6 +21,6 @@ model apiKey {
   hashedKey   String
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  count       Int        @default(1)   
+    
   createdAt   DateTime   @default(now())
 }

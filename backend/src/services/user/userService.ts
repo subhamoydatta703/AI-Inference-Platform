@@ -1,3 +1,4 @@
+import { count } from "node:console";
 import { prisma } from "../../config/db/db";
 
 
@@ -27,6 +28,7 @@ export const getUserById = async (id: string) => {
             data: {
                 id: user.id,
                 email: user.email,
+                count: user.count
             },
         };
         
@@ -72,3 +74,6 @@ export const createUserByIdAndEmail = async (id: string, email: string) => {
         };
     }
 }
+
+
+// update user count
