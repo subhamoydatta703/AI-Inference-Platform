@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { clerkClient, getAuth } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { prisma } from "../../config/db/db";
-import { CreatedUserSchema } from "../../utils/validation/userValidation";
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -9,7 +8,9 @@ export interface AuthenticatedRequest extends Request {
 
 export async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
-    const { userId } = getAuth(req);
+    const auth = getAuth(req);
+    const userId = auth.userId;
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -17,32 +18,32 @@ export async function authMiddleware(req: AuthenticatedRequest, res: Response, n
       });
     }
 
-    // 1. Fast path: User already exists in DB
+    // 1. Fast path: User already exists in local DB (takes 1ms)
     let user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
-    // 2. Slow path: New user needs to be synced
+    // 2. First-time sync: User doesn't exist in local DB yet
     if (!user) {
       try {
-        const clerkUser = await clerkClient.users.getUser(userId);
-        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        // Read the email directly from the JWT session claims (zero network latency!)
+        const email = (auth.sessionClaims as any)?.email as string | undefined;
 
         if (!email) {
           return res.status(400).json({
             success: false,
-            message: "No email address found for this account",
+            message: "No email address found in session token. Please ensure session token claims are configured in Clerk.",
           });
         }
 
-        // Use upsert so if a parallel request just created it, it won't crash
+        // Upsert into local PostgreSQL
         user = await prisma.user.upsert({
           where: { id: userId },
           create: { id: userId, email },
-          update: { email }, // If it exists, just ensure email is up to date
+          update: { email },
         });
       } catch (syncErr: any) {
-        // If a unique constraint or race happens, fetch the user that the other request just created!
+        // If parallel requests raced to insert, fetch the user created by the winning request
         user = await prisma.user.findUnique({
           where: { id: userId },
         });
