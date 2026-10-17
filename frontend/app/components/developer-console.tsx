@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AccountButton, AccountSettings } from "./account";
+import { ApiKeys } from "./api-keys";
 import { useAuthAvailable } from "./auth-availability";
 import { Brand, Icon, type IconName } from "./icons";
 import { IntegrationDocs } from "./integration-docs";
@@ -306,8 +307,9 @@ export default function Console() {
                 <Capability
                   icon="key"
                   title="API-key service"
-                  status="Not available yet"
-                  text="Real key creation and revocation require the key service."
+                  status="Available"
+                  available
+                  text="Create and revoke up to 5 API keys per account."
                 />
               </div>
               <section className="panel platform-flow">
@@ -328,7 +330,7 @@ export default function Console() {
                   <h2>Manage application access.</h2>
                   <p>
                     Use API keys to authenticate requests from your backend.
-                    Key creation and revocation will be enabled when the key service is connected.
+                    Create and revoke application keys with your signed-in account.
                   </p>
                   <button className="button" onClick={() => go("keys")}>
                     View API keys <Icon name="arrow" size={16} />
@@ -361,50 +363,7 @@ export default function Console() {
               </section>
             </>
           )}
-          {section === "keys" && (
-            <>
-              <ServiceNotice
-                title="API-key management is not available yet"
-                text="Key creation, listing, and revocation are not connected yet. Your application keys will be available here when the key service is ready."
-              />
-              <section className="panel">
-                <PanelTitle
-                  title="Application API keys"
-                  subtitle="Authenticate calls from your own backend."
-                  action={
-                    <button
-                      className="button primary"
-                      disabled
-                      aria-describedby="keys-unavailable"
-                    >
-                      <Icon name="plus" size={16} />
-                      Create API key
-                    </button>
-                  }
-                />
-                <div className="empty-state key-empty">
-                  <span className="empty-icon">
-                    <Icon name="key" size={27} />
-                  </span>
-                  <h2>No key data available</h2>
-                  <p id="keys-unavailable">
-                    Key creation is disabled until the key service is connected.
-                    <br />
-                    Return here to create and manage application access when it
-                    is available.
-                  </p>
-                  <button className="button" onClick={() => go("docs")}>
-                    Read integration docs <Icon name="arrow" size={16} />
-                  </button>
-                </div>
-                <div className="panel-footnote">
-                  <Icon name="shield" size={16} />
-                  API keys authenticate your backend’s HTTP requests. Keep them
-                  in your server environment.
-                </div>
-              </section>
-            </>
-          )}
+          {section === "keys" && <ApiKeys />}
           {section === "models" && (
             <>
               <ServiceNotice

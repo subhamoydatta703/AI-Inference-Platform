@@ -27,7 +27,7 @@ The intended flow is query and optional source-code/documentation context -> orc
 
 Queries and optional code/documentation context are sent by the integrating backend through HTTP. The website has no query workspace, playground, or browser submission form. There are no simulated answers, invented activity metrics, example API keys, or assumed configured model names. Existing browser-local demo keys are ignored.
 
-API keys are a core integration requirement. Create, list, and revoke operations remain unavailable until the backend key service exists; the frontend never generates pretend credentials. Platform models and history show read-only unavailable states.
+API keys are a core integration requirement. The API keys page calls GET /api/v1/api-keys, POST /api/v1/api-keys, and DELETE /api/v1/api-keys/:id with a Clerk session token to create and revoke real backend keys (up to 5 per account). The page loads stored key metadata and refreshes it after creation or deletion, including failed mutation attempts. A successful revoke is checked against the refreshed list. The five-key limit uses that stored list. Raw secrets stay in memory only during the current page session; existing keys can be revoked after refresh, but cannot be copied or revealed because the backend stores only their hashes. Copy each new secret before leaving the page. The frontend never generates credentials. Platform models and history show read-only unavailable states.
 
 Integration docs have exactly two language tabs: Python and TypeScript. Both examples show backend HTTP requests, server-side API-key authentication, optional context, response handling, and errors. POST /api/v1/queries and its response shape are explicitly a proposed contract, not an implemented API. The existing live GET /api/v1/users/me uses a Clerk session token.
 
@@ -49,6 +49,6 @@ $env:AUTH_TEST_BASE_URL = 'http://localhost:3002'
 bun run test:auth
 ```
 
-Browser checks cover desktop/mobile layout, retired query-link handling, Python/TypeScript code copying, unavailable API-key/model/history services, ignored legacy mock keys, account navigation, and legacy links. Tests use port 3100, cleared authentication keys, and an isolated .next-tests build directory so an existing dev server can stay running.
+Browser checks cover desktop/mobile layout, retired query-link handling, Python/TypeScript code copying, signed-out API-key access and unavailable model/history services, ignored legacy mock keys, account navigation, and legacy links. Tests use port 3100, cleared authentication keys, and an isolated .next-tests build directory so an existing dev server can stay running.
 
 See DESIGN.md for the Figma reference, visual decisions, routes, and integration boundaries.

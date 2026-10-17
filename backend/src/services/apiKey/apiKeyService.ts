@@ -15,13 +15,19 @@ const hashApiKey = (apiKey: string) => {
   return crypto.createHash("sha256").update(apiKey).digest("hex");
 };
 
-export const updateApiKeyCount = async (userId: string) => {
+// listing api keys
+export const listApiKeysService = async (userId: string) => {
   try {
-
+    const keys = await prisma.apiKey.findMany({
+      where: { userId },
+      select: { id: true, userId: true, createdAt: true },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+    return { success: true, data: keys };
   } catch (error) {
-
+    console.error("Error in listApiKeysService", error);
+    return { success: false, message: "Internal server error", data: null };
   }
-
 }
 
 

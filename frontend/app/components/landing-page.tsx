@@ -59,7 +59,7 @@ export default function LandingPage() {
           </div>
           <div className="hero-note">
             <Icon name="terminal" size={13} />
-            Account access is live. Query and API-key services are in
+            Account access and API-key management are live. Query evaluation is in
             development.
           </div>
           <ProductStage>
@@ -168,8 +168,8 @@ export default function LandingPage() {
                 <Icon name="key" size={28} />
                 <strong>Application API keys</strong>
                 <p>
-                  Create and revoke keys from the developer console when the key
-                  service is available.
+                  Create and revoke up to 5 keys per account from the developer
+                  console.
                 </p>
                 <div>
                   <Icon name="shield" size={15} />
@@ -205,7 +205,7 @@ export default function LandingPage() {
             </article>
           </div>
           <p className="section-footnote">
-            Query evaluation and key management are not available yet. The
+            Query evaluation is not available yet. The
             documentation clearly marks the proposed contract.
           </p>
         </section>
@@ -227,7 +227,7 @@ export default function LandingPage() {
               },
               {
                 title: "Manage your API keys",
-                text: "Authenticate your application with server-held keys when the key service is available.",
+                text: "Create and revoke application keys, then keep them in your backend.",
                 target: "keys",
               },
               {
@@ -271,7 +271,7 @@ export default function LandingPage() {
               },
               {
                 q: "What is available right now?",
-                a: "Clerk sign-in, your backend account profile, and Python and TypeScript integration documentation are available. Evaluation, API-key management, model listings, and usage history show unavailable states until their backend services exist.",
+                a: "Clerk sign-in, your backend account profile, API-key listing, creation and revocation, and Python and TypeScript integration documentation are available. Query evaluation, model listings, and usage history are not available yet.",
               },
             ].map((item) => (
               <details key={item.q}>

@@ -24,6 +24,8 @@ import {
   ShieldCheck,
   Trash2,
   Code2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export type IconName = keyof typeof icons;
@@ -52,6 +54,8 @@ const icons = {
   shield: ShieldCheck,
   trash: Trash2,
   code: Code2,
+  eye: Eye,
+  eyeOff: EyeOff,
 };
 export function Icon({
   name,

@@ -1,8 +1,24 @@
 import { type Response } from "express"
 import type { AuthenticatedRequest } from "../../middlewares/auth/authMiddleware"
-import { createApiKeyService, deleteApiKeyService } from "../../services/apiKey/apiKeyService";
+import { createApiKeyService, deleteApiKeyService, listApiKeysService } from "../../services/apiKey/apiKeyService";
 import type { ApiErrorResponse } from "../../utils/types/apiKeyError";
-import { success } from "zod";
+
+
+
+
+// listing api keys
+export const listApiKeysController = async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized", data: null });
+    }
+    try {
+        const result = await listApiKeysService(req.userId);
+        return res.status(result.success ? 200 : 500).json(result);
+    } catch (error) {
+        console.error("Error in listApiKeysController", error);
+        return res.status(500).json({ success: false, message: "Internal server error", data: null });
+    }
+};
 
 
 
@@ -35,6 +51,11 @@ export const createApiKeyController = async (req: AuthenticatedRequest, res: Res
             
             return res.status(403).json(errorResponse)
         }
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error",
+                data: null,
+            });
         }
         
         return res.status(201).json({
@@ -78,6 +99,9 @@ export const deleteApiKeyController = async(req: AuthenticatedRequest, res: Resp
 
     const deletedApiKey = await deleteApiKeyService(userId, apiKeyId)
     if (!deletedApiKey.success) {
+      if (deletedApiKey.message === "Internal server error") {
+        return res.status(500).json({ success: false, message: "Internal server error" });
+      }
       const errorResponse: ApiErrorResponse = {
         success: false,
         status: 'error',

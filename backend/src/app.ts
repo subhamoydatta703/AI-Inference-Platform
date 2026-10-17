@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import userRoutes from './routes/user/userRoutes';
+import apiKeyRoutes from './routes/apiKey/apiKeyRoutes';
 import { clerkMiddleware } from '@clerk/express';
 
 const app = express();
@@ -18,9 +19,11 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/v1/users", clerkMiddleware({
-    publishableKey: process.env.CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-}), userRoutes);
+app.use(clerkMiddleware());
+
+
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/api-keys", apiKeyRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
