@@ -29,8 +29,13 @@ export const updateApiKeyCount = async (userId: string) => {
 export const createApiKeyService = async (userId: string) => {
 
   try {
+    const generatedApiKey = generateApiKey();
+    const hashedApiKey = hashApiKey(generatedApiKey);
+
+    // using transaction for race condition
+    return await prisma.$transaction(async(tx)=>{
     // check the count of existing user's api key and update apikey count
-    const apiKeyCount = await prisma.apiKey.count({
+    const apiKeyCount = await tx.apiKey.count({
       where: {
         userId: userId
       }
@@ -38,16 +43,15 @@ export const createApiKeyService = async (userId: string) => {
     if (apiKeyCount >= 5) {
       return {
         success: false,
+        message:"MAX_LIMIT_EXCEEDED",
         data: null
       }
     }
 
 
-    const generatedApiKey = generateApiKey();
-    const hashedApiKey = hashApiKey(generatedApiKey);
 
     // create an api key for that user
-    const createdKey = await prisma.apiKey.create({
+    const createdKey = await tx.apiKey.create({
       data: {
         userId: userId,
         hashedKey: hashedApiKey
@@ -64,6 +68,8 @@ export const createApiKeyService = async (userId: string) => {
 
       }
     }
+
+  })
 
 
 
@@ -122,7 +128,7 @@ export const verifyApiKeyService = async (apiKey: string) => {
 
   try {
     const hashedApiKey = hashApiKey(apiKey);
-    const apiKeyRecord = await prisma.apiKey.findFirst({
+    const apiKeyRecord = await prisma.apiKey.findUnique({
       where: {
         hashedKey: hashedApiKey
       }

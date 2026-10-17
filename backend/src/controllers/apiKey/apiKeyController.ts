@@ -23,7 +23,8 @@ export const createApiKeyController = async (req: AuthenticatedRequest, res: Res
         }
 
         const generatedApiKey = await createApiKeyService(userId)
-        if(!generatedApiKey.success && generatedApiKey.data===null){
+        if(!generatedApiKey.success){
+            if(generatedApiKey.message === "MAX_LIMIT_EXCEEDED"){
             const errorResponse: ApiErrorResponse = {
                 success: false,
                 status: 'error',
@@ -33,6 +34,7 @@ export const createApiKeyController = async (req: AuthenticatedRequest, res: Res
             }
             
             return res.status(403).json(errorResponse)
+        }
         }
         
         return res.status(201).json({
