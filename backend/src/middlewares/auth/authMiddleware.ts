@@ -7,49 +7,53 @@ export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-/**
- * Authenticates requests via Clerk JWT tokens and syncs new users to the local database.
- */
 export async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
     const { userId } = getAuth(req);
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized: Missing authentication credentials"
+        message: "Unauthorized: Missing authentication credentials",
       });
     }
 
-    // Check if user exists in our DB
+    // 1. Fast path: User already exists in DB
     let user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
-    // If user does not exist in local DB, fetch details from Clerk and sync
+    // 2. Slow path: New user needs to be synced
     if (!user) {
       try {
         const clerkUser = await clerkClient.users.getUser(userId);
-        const email = clerkUser.emailAddresses[0]?.emailAddress || `${userId}@example.com`;
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
 
-        const validatedUser = CreatedUserSchema.parse({
-          id: userId,
-          email: email,
+        if (!email) {
+          return res.status(400).json({
+            success: false,
+            message: "No email address found for this account",
+          });
+        }
+
+        // Use upsert so if a parallel request just created it, it won't crash
+        user = await prisma.user.upsert({
+          where: { id: userId },
+          create: { id: userId, email },
+          update: { email }, // If it exists, just ensure email is up to date
+        });
+      } catch (syncErr: any) {
+        // If a unique constraint or race happens, fetch the user that the other request just created!
+        user = await prisma.user.findUnique({
+          where: { id: userId },
         });
 
-        user = await prisma.user.upsert({
-          where: { id: userId }, create: validatedUser, update: {},
-        });
-        console.info("Synced new user from Clerk");
-      } catch (clerkErr) {
-        console.error("Failed to sync user from Clerk:", clerkErr);
-        // Fallback: create user with placeholder email to avoid blocking flow
-        const fallbackUser = CreatedUserSchema.parse({
-          id: userId,
-          email: `user_${userId}@placeholder.com`,
-        });
-        user = await prisma.user.upsert({
-          where: { id: userId }, create: fallbackUser, update: {},
-        });
+        if (!user) {
+          console.error("Failed to sync user:", syncErr);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to initialize user profile",
+          });
+        }
       }
     }
 
@@ -57,9 +61,9 @@ export async function authMiddleware(req: AuthenticatedRequest, res: Response, n
     next();
   } catch (error) {
     console.error("Authentication middleware error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error in authentication"
+      message: "Internal Server Error in authentication",
     });
   }
 }
