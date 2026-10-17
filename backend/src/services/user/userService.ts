@@ -1,4 +1,4 @@
-import { count } from "node:console";
+
 import { prisma } from "../../config/db/db";
 
 
@@ -27,8 +27,7 @@ export const getUserById = async (id: string) => {
             message: "User found",
             data: {
                 id: user.id,
-                email: user.email,
-                count: user.count
+                email: user.email
             },
         };
         
