@@ -1,7 +1,5 @@
 import crypto from "node:crypto"
 import { prisma } from "../../config/db/db";
-import { success } from "zod";
-import { getUserById } from "../user/userService";
 
 
 
@@ -32,21 +30,12 @@ export const createApiKeyService = async (userId: string) => {
 
   try {
     // check the count of existing user's api key and update apikey count
-    const updateCount = await prisma.user.updateMany({
+    const apiKeyCount = await prisma.apiKey.count({
       where: {
-        id: userId,
-        count: {
-          lt: 5
-        }
-      },
-      data: {
-        count: {
-          increment: 1
-        }
+        userId: userId
       }
     })
-
-    if (updateCount.count < 1) {
+    if (apiKeyCount >= 5) {
       return {
         success: false,
         data: null
@@ -80,7 +69,7 @@ export const createApiKeyService = async (userId: string) => {
 
 
   } catch (error) {
-    console.error("Error in apiKeyService", error);
+    console.error("Error in createApiKeyService", error);
     return {
       success: false,
       message: "Internal server error",
@@ -105,34 +94,20 @@ export const deleteApiKeyService = async (userId: string, apiKeyId: string) => {
         userId: userId
       }
     })
-     if (deletedApiKey.count === 0) {
+     if (deletedApiKey.count <= 0) {
         return {
           success: false,
-          code: "NOT_FOUND",
           message: "API key not found",
         };
       }
 
-    // update api key count
-    await prisma.user.updateMany({
-      where: {
-        id: userId,
-        count:{
-          gt:0
-        }
-      },
-      data: {
-        count: {
-          decrement: 1
-        }
-      }
-    })
+    
        return {
         success: true,
         message: "API key deleted successfully",
       };
   } catch (error) {
-    console.error("Error in apiKeyService", error);
+    console.error("Error in deleteApiKeyService", error);
     return {
       success: false,
       message: "Internal server error",
@@ -165,7 +140,11 @@ export const verifyApiKeyService = async (apiKey: string) => {
       data: apiKeyRecord
     }
   } catch (error) {
-
+    console.error("Error in verifyApiKeyService", error);
+    return {
+      success: false,
+      message: "Internal server error",
+    };
   }
 
 
