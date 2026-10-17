@@ -39,7 +39,7 @@ export const createApiKeyService = async (userId: string) => {
            if(apiKeyCount === 5){
                return {
                    success: false,
-                   message: "You already reached your limited api key quota"
+                   data: null
    
                }
            }
@@ -74,7 +74,10 @@ export const createApiKeyService = async (userId: string) => {
         
             return {
                 success: true,
-                generateApiKey
+                data:{
+                  generateApiKey
+
+                }
             }
         
     
@@ -150,5 +153,7 @@ export const verifyApiKeyService = async (apiKey:string) => {
   } catch (error) {
     
   }
+
   
 }
+
