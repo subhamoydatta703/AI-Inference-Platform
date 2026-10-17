@@ -30,7 +30,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             <strong>Proposed API contract — not available yet</strong>
             <p>
               The request and response below describe the intended integration.
-              The query endpoint and API-key service have not been implemented.
+              API-key creation and revocation are available; the query endpoint is not implemented.
               These examples will not run against the current backend.
             </p>
           </div>
@@ -41,8 +41,8 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             <div>
               <h3>Create an API key</h3>
               <p>
-                Use a platform API key from your backend. Key creation will be
-                enabled when the key service is available.
+                Create a key in the API keys page, then save it in your backend.
+                Up to 5 keys are allowed per account.
               </p>
             </div>
           </div>

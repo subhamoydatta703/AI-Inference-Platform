@@ -65,7 +65,7 @@ test("landing explains the API integration and leads to documentation", async ({
   expect(errors).toEqual([]);
 });
 
-test("API keys ignore old demo records and show unavailable creation", async ({
+test("API keys ignore old demo records and require sign-in for creation", async ({
   page,
 }) => {
   await page.addInitScript(() =>

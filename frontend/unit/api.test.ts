@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { getPlatformProfile } from "../app/lib/api";
+import { createPlatformApiKey, deletePlatformApiKey, getPlatformApiKeys, getPlatformProfile } from "../app/lib/api";
 
 const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 afterEach(() => {
@@ -7,6 +7,67 @@ afterEach(() => {
   if (originalBackendUrl === undefined)
     delete process.env.NEXT_PUBLIC_BACKEND_URL;
   else process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
+});
+
+describe("authenticated API-key lifecycle", () => {
+  test("loads the backend key list using the authenticated GET route", async () => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:5000/";
+    const stored = { id: "old-key", userId: "user_test", createdAt: "2026-10-17T00:00:00.000Z" };
+    const request = spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ success: true, data: [stored] }));
+    expect(await getPlatformApiKeys("token")).toEqual([stored]);
+    expect(request).toHaveBeenCalledWith("http://localhost:5000/api/v1/api-keys", expect.objectContaining({ method: "GET", headers: { Authorization: "Bearer token" }, cache: "no-store" }));
+    request.mockResolvedValue(Response.json({ success: true, data: null }));
+    await expect(getPlatformApiKeys("token")).rejects.toThrow("invalid key list");
+  });
+  test("creates a backend key with a Clerk token and no invented fields", async () => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:5000/";
+    const key = { id: "key-id", key: "backend-generated-secret" };
+    const request = spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ success: true, data: key }, { status: 201 }),
+    );
+    expect(await createPlatformApiKey("session-token")).toEqual(key);
+    expect(request).toHaveBeenCalledWith("http://localhost:5000/api/v1/api-keys", expect.objectContaining({
+      method: "POST",
+      headers: { Authorization: "Bearer session-token" },
+      cache: "no-store",
+    }));
+  });
+
+  test("deletes by the backend ID rather than sending the secret", async () => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:5000";
+    const request = spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ success: true, message: "API key deleted successfully" }),
+    );
+    await deletePlatformApiKey("session-token", "key/id");
+    expect(request).toHaveBeenCalledWith("http://localhost:5000/api/v1/api-keys/key%2Fid", expect.objectContaining({
+      method: "DELETE",
+      headers: { Authorization: "Bearer session-token" },
+    }));
+  });
+
+  test("does not send mutations without a token or deletion ID", async () => {
+    const request = spyOn(globalThis, "fetch");
+    await expect(createPlatformApiKey("")).rejects.toThrow("Please sign in again");
+    await expect(deletePlatformApiKey("", "key-id")).rejects.toThrow("Please sign in again");
+    await expect(deletePlatformApiKey("token", "")).rejects.toThrow("ID is required");
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  test("surfaces the backend limit and missing-key errors", async () => {
+    const request = spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ success: false, code: "MAX_LIMIT_EXCEEDED", message: "You have reached the maximum limit of 5 API keys." }, { status: 403 }),
+    );
+    await expect(createPlatformApiKey("token")).rejects.toThrow("maximum limit of 5");
+    request.mockResolvedValue(Response.json({ success: false, message: "API key not found" }, { status: 404 }));
+    await expect(deletePlatformApiKey("token", "missing")).rejects.toThrow("API key not found");
+  });
+
+  test("rejects false success and malformed creation payloads", async () => {
+    const request = spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ success: true, data: null }));
+    await expect(createPlatformApiKey("token")).rejects.toThrow("invalid key");
+    request.mockResolvedValue(Response.json({ success: false, message: "Internal server error" }));
+    await expect(createPlatformApiKey("token")).rejects.toThrow("Internal server error");
+  });
 });
 
 describe("direct authenticated profile requests", () => {

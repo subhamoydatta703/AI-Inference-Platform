@@ -24,3 +24,13 @@ Override the allowed origins with a comma-separated environment variable, using 
 ```env
 CORS_ORIGINS=https://your-frontend.example.com,http://localhost:3000
 ```
+
+## API routes
+
+- `GET /health`: public health check.
+- `GET /api/v1/users/me`: current profile.
+- `GET /api/v1/api-keys`: list the current user's stored key metadata (`id`, `userId`, `createdAt`), without hashes or secrets.
+- `POST /api/v1/api-keys`: create a key, returning `{ success: true, data: { id, key } }` (201). At most 5 keys per account (403 with `MAX_LIMIT_EXCEEDED`). Copy the raw key immediately; only its hash is stored.
+- `DELETE /api/v1/api-keys/:id`: delete a key belonging to the current user (200), or 404 if absent or owned by another user.
+
+All `/api/v1` routes above require a Clerk session bearer token and synchronize the local user through `authMiddleware`. Query execution is not implemented. Key counts are calculated from stored records, so deletion frees a slot without a separate counter update. API keys are not Clerk session tokens.
