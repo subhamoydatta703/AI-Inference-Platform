@@ -11,8 +11,7 @@ datasource db {
 model User {
   id         String     @id @default(uuid())
   email      String     @unique   
-  createdAt  DateTime   @default(now())
-  count       Int        @default(0) 
+  createdAt  DateTime   @default(now()) 
   apiKey     apiKey[]
 }
 
