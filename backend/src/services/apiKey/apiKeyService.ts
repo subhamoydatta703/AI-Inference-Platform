@@ -122,3 +122,33 @@ export const deleteApiKeyService = async(userId: string)=>{
     
   }
 }
+
+
+// api key verification
+
+export const verifyApiKeyService = async (apiKey:string) => {
+
+  try {
+    const hashedApiKey = hashApiKey(apiKey);
+    const apiKeyRecord = await prisma.apiKey.findFirst({
+      where:{
+        hashedKey:hashedApiKey
+      }
+    })
+
+    if(!apiKeyRecord){
+      return{
+        success: false,
+        data: null
+      }
+    }
+
+    return {
+      success: true,
+      data: apiKeyRecord
+    }
+  } catch (error) {
+    
+  }
+  
+}
