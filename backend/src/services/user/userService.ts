@@ -1,5 +1,5 @@
 
-import { prisma } from "../../config/db/db";
+import { prisma } from "../../config/db/dbConfig";
 
 
 
@@ -13,7 +13,7 @@ export const getUserById = async (id: string) => {
                 id: id,
             },
         });
-        
+
         if (!user) {
             return {
                 success: false,
@@ -21,7 +21,7 @@ export const getUserById = async (id: string) => {
                 data: null,
             };
         }
-    
+
         return {
             success: true,
             message: "User found",
@@ -30,7 +30,7 @@ export const getUserById = async (id: string) => {
                 email: user.email
             },
         };
-        
+
     } catch (error) {
         console.error("Error in getUserById", error);
         return {
@@ -39,8 +39,8 @@ export const getUserById = async (id: string) => {
             data: null,
         };
     }
-        
-    }
+
+}
 
 
 
@@ -55,7 +55,7 @@ export const createUserByIdAndEmail = async (id: string, email: string) => {
                 email: email,
             },
         });
-        
+
         return {
             success: true,
             message: "User created",
@@ -64,7 +64,7 @@ export const createUserByIdAndEmail = async (id: string, email: string) => {
                 email: user.email,
             },
         };
-    } catch (error) {   
+    } catch (error) {
         console.error("Error in createUserByIdAndEmail", error);
         return {
             success: false,

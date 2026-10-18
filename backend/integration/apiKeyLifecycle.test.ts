@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 // Run separately from the HTTP tests, which mock the service module:
 // RUN_DATABASE_TESTS=1 bun test integration/apiKeyLifecycle.test.ts
 test.skipIf(process.env.RUN_DATABASE_TESTS !== "1")("stored keys release a slot after revocation", async () => {
-  const { prisma } = await import("../src/config/db/db");
+  const { prisma } = await import("../src/config/db/dbConfig");
   const { createApiKeyService, deleteApiKeyService, listApiKeysService, verifyApiKeyService } = await import("../src/services/apiKey/apiKeyService");
   const userId = randomUUID();
   try {
