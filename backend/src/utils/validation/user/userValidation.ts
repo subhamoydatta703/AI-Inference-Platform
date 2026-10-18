@@ -4,3 +4,4 @@ export const CreatedUserSchema = z.object({
     email: z.string().email("Invalid email format"),
 });
 
+
