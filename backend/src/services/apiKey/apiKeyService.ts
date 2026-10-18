@@ -1,5 +1,5 @@
 import crypto from "node:crypto"
-import { prisma } from "../../config/db/db";
+import { prisma } from "../../config/db/dbConfig";
 
 
 
@@ -39,43 +39,43 @@ export const createApiKeyService = async (userId: string) => {
     const hashedApiKey = hashApiKey(generatedApiKey);
 
     // using transaction for race condition
-    return await prisma.$transaction(async(tx)=>{
-    // check the count of existing user's api key and update apikey count
-    const apiKeyCount = await tx.apiKey.count({
-      where: {
-        userId: userId
+    return await prisma.$transaction(async (tx) => {
+      // check the count of existing user's api key and update apikey count
+      const apiKeyCount = await tx.apiKey.count({
+        where: {
+          userId: userId
+        }
+      })
+      if (apiKeyCount >= 5) {
+        return {
+          success: false,
+          message: "MAX_LIMIT_EXCEEDED",
+          data: null
+        }
       }
-    })
-    if (apiKeyCount >= 5) {
+
+
+
+      // create an api key for that user
+      const createdKey = await tx.apiKey.create({
+        data: {
+          userId: userId,
+          hashedKey: hashedApiKey
+
+        }
+      })
+
+
       return {
-        success: false,
-        message:"MAX_LIMIT_EXCEEDED",
-        data: null
+        success: true,
+        data: {
+          id: createdKey.id,
+          key: generatedApiKey
+
+        }
       }
-    }
 
-
-
-    // create an api key for that user
-    const createdKey = await tx.apiKey.create({
-      data: {
-        userId: userId,
-        hashedKey: hashedApiKey
-
-      }
     })
-
-
-    return {
-      success: true,
-      data: {
-        id: createdKey.id,
-        key: generatedApiKey
-
-      }
-    }
-
-  })
 
 
 
@@ -96,7 +96,7 @@ export const createApiKeyService = async (userId: string) => {
 
 export const deleteApiKeyService = async (userId: string, apiKeyId: string) => {
   try {
-    
+
 
 
     // delete api key from db
@@ -106,18 +106,18 @@ export const deleteApiKeyService = async (userId: string, apiKeyId: string) => {
         userId: userId
       }
     })
-     if (deletedApiKey.count <= 0) {
-        return {
-          success: false,
-          message: "API key not found",
-        };
-      }
-
-    
-       return {
-        success: true,
-        message: "API key deleted successfully",
+    if (deletedApiKey.count <= 0) {
+      return {
+        success: false,
+        message: "API key not found",
       };
+    }
+
+
+    return {
+      success: true,
+      message: "API key deleted successfully",
+    };
   } catch (error) {
     console.error("Error in deleteApiKeyService", error);
     return {
