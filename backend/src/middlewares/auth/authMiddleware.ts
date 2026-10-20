@@ -58,6 +58,9 @@ export async function authMiddleware(req: AuthenticatedRequest, res: Response, n
       }
     }
 
+    
+
+
     req.userId = userId;
     next();
   } catch (error) {

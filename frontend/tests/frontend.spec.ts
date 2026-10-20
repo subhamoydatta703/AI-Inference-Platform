@@ -102,7 +102,7 @@ test("API keys ignore old demo records and require sign-in for creation", async 
   await expectFitsViewport(page);
 });
 
-test("docs contain only Python and TypeScript and copy the proposed backend contract", async ({
+test("docs contain only Python and TypeScript and copy the live backend contract", async ({
   page,
   context,
 }, testInfo) => {
@@ -113,19 +113,27 @@ test("docs contain only Python and TypeScript and copy the proposed backend cont
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tab")).toHaveCount(2);
   await expect(page.getByRole("tabpanel")).toContainText("urllib.request");
+  await expect(page.getByRole("heading", { name: "Set your environment variables" })).toHaveCount(0);
   await page.getByRole("tab", { name: "TypeScript", exact: true }).click();
   await expect(page.getByRole("tabpanel")).toContainText(
-    "process.env.INFERENCE_API_KEY",
+    "environmentSchema.parse(process.env)",
   );
   await expect(page.getByRole("tabpanel")).toContainText("/api/v1/queries");
   await expect(page.getByRole("tabpanel")).not.toContainText("model:");
   await page.getByRole("button", { name: "Copy code", exact: true }).click();
   const code = await page.evaluate(() => navigator.clipboard.readText());
   expect(code).toContain("await fetch");
-  expect(code).toContain("not available yet");
+  expect(code).toContain("Bearer ${apiKey}");
+  expect(code).not.toContain("CLERK_SESSION_TOKEN");
+  expect(code).toContain("console.log(JSON.stringify(result, null, 2))");
+  expect(code).toContain("let body: unknown");
+  expect(code).toContain("successSchema.safeParse(body)");
+  expect(code).toContain("type QueryResponse = z.infer");
+  expect(code).toContain("language:");
+  expect(code).not.toContain("context:");
   expect(code).toContain("Authorization");
   await expect(
-    page.getByText("Proposed API contract — not available yet", {
+    page.getByText("Query endpoint available with API-key authentication", {
       exact: true,
     }),
   ).toBeVisible();
@@ -136,13 +144,14 @@ test("docs contain only Python and TypeScript and copy the proposed backend cont
   });
 });
 
-test("models and history are honest unavailable states with working account navigation", async ({
+test("models reflect the backend and history stays unavailable with working account navigation", async ({
   page,
 }, testInfo) => {
   await page.goto("/console#models");
   await expect(
-    page.getByRole("heading", { name: "No models reported yet", exact: true }),
+    page.getByRole("heading", { name: "GPT-OSS 20B", exact: true }),
   ).toBeVisible();
+  await expect(page.getByText("Provider: Groq · Model: openai/gpt-oss-20b", { exact: false })).toBeVisible();
   await expect(page.getByRole("combobox")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /Open playground|Select model/ }),

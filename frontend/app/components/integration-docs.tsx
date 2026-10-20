@@ -5,8 +5,8 @@ import { Icon } from "./icons";
 import {
   exampleQuery,
   integrationSnippet,
-  proposedQueryPath,
-  proposedResponse,
+  queryPath,
+  exampleResponse,
   type IntegrationLanguage,
 } from "../lib/integration";
 
@@ -17,21 +17,20 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
       <section className="panel integration-main">
         <div className="integration-intro">
           <span className="eyebrow">BACKEND TO BACKEND</span>
-          <h2>Connect once. Let the platform evaluate.</h2>
+          <h2>Send a query. Receive a model response.</h2>
           <p>
-            Your backend sends a query and optional code or documentation. The
-            platform orchestrates the models, evaluates their answers, and
-            returns a final insight.
+            Send a query with optional code, language, and a URL. The current
+            orchestrator calls GPT-OSS 20B through Groq and returns its answer.
           </p>
         </div>
         <div className="availability-notice">
           <Icon name="clock" size={18} />
           <div>
-            <strong>Proposed API contract — not available yet</strong>
+            <strong>Query endpoint available with API-key authentication</strong>
             <p>
-              The request and response below describe the intended integration.
-              API-key creation and revocation are available; the query endpoint is not implemented.
-              These examples will not run against the current backend.
+              Send your platform API key as an Authorization Bearer token.
+              The backend identifies your account from the key; no user ID
+              belongs in the request body. The platform also needs Groq credentials configured.
             </p>
           </div>
         </div>
@@ -39,10 +38,11 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <div>
             <span className="step">1</span>
             <div>
-              <h3>Create an API key</h3>
+              <h3>Create a platform API key</h3>
               <p>
-                Create a key in the API keys page, then save it in your backend.
-                Up to 5 keys are allowed per account.
+                Sign in, open API keys, and create a key. Copy it immediately
+                and store it as INFERENCE_API_KEY in your backend. Existing
+                key secrets cannot be retrieved. You can create up to 5 keys.
               </p>
             </div>
           </div>
@@ -52,17 +52,19 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
               <h3>Send a query and context</h3>
               <p>
                 Use an HTTP POST request. No model selection or provider
-                credentials are required in the proposed request.
+                credentials are required in the request body.
               </p>
             </div>
           </div>
           <div>
             <span className="step">3</span>
             <div>
-              <h3>Receive the evaluated insight</h3>
+              <h3>Receive the model answer</h3>
               <p>
-                Your backend receives the final result and returns it to your
-                application.
+                Both examples print the complete JSON response. Read
+                data.response for the Markdown answer and
+                data.query.conversationId for its identifier. Each request starts a new conversation;
+                history and follow-up context are not stored yet.
               </p>
             </div>
           </div>
@@ -125,43 +127,60 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           </section>
           <section>
             <div className="contract-heading">
-              <h3>Proposed response shape</h3>
+              <h3>Response shape</h3>
               <button
                 className="icon-button"
                 aria-label="Copy response shape"
-                onClick={() => copy(JSON.stringify(proposedResponse, null, 2))}
+                onClick={() => copy(JSON.stringify(exampleResponse, null, 2))}
               >
                 <Icon name="copy" size={15} />
               </button>
             </div>
+            <p>
+              The API returns a JSON object. data.response contains Markdown
+              text; escaped newlines such as {"\\n"} are normal inside JSON strings.
+              Render that field as Markdown in your application to display
+              headings, tables, and code blocks.
+            </p>
             <pre className="code-block">
-              <code>{JSON.stringify(proposedResponse, null, 2)}</code>
+              <code>{JSON.stringify(exampleResponse, null, 2)}</code>
             </pre>
           </section>
         </div>
       </section>
       <aside className="integration-aside">
         <section className="panel">
-          <span className="tag">PROPOSED ENDPOINT</span>
-          <h3>Evaluate a query</h3>
-          <code>POST {proposedQueryPath}</code>
+          <span className="tag available">LIVE ENDPOINT</span>
+          <h3>Process a query</h3>
+          <code>POST {queryPath}</code>
           <p>
-            Authentication: <code>Authorization: Bearer &lt;API_KEY&gt;</code>
+            Authentication: <code>Authorization: Bearer &lt;INFERENCE_API_KEY&gt;</code>
           </p>
           <p>
-            JSON request and response. The orchestration layer chooses the
-            models.
+            query is required and must contain non-whitespace text. Omit
+            unused optional fields; url must be a valid URL if provided.
+            A URL is passed as context; its contents are not fetched.
           </p>
         </section>
         <section className="panel">
           <Icon name="shield" size={23} />
-          <h3>Keep keys in your backend</h3>
+          <h3>Keep API keys in your backend</h3>
           <p>
-            Store the API key in a server environment variable. Never bundle it
-            in browser code or commit it to your repository.
+            Your application uses INFERENCE_API_KEY for platform requests.
+            GROQ_API_KEY is a separate provider credential used only by the
+            platform&apos;s Express backend. Never put either secret in browser
+            code or commit it to your repository.
           </p>
           <code>INFERENCE_BASE_URL</code>
           <code>INFERENCE_API_KEY</code>
+        </section>
+        <section className="panel">
+          <h3>Error responses</h3>
+          <p>400: invalid request, with validation issues in errors. 401: missing
+            or invalid API key, including revoked keys. 500: authentication
+            service or query processing failed.</p>
+          <p>Multiple-model execution and independent evaluation are not
+            implemented yet.</p>
         </section>
         <section className="panel">
           <span className="tag available">LIVE ENDPOINT</span>

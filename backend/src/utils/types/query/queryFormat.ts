@@ -2,7 +2,7 @@
 
 
 export interface QueryFormat {
-    conversationId: string;
+    conversationId?: string;
     query: string;
     url?: string;
     language?: string;

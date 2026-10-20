@@ -194,7 +194,7 @@ export default function Console() {
             <span className="eyebrow">ONE REQUEST. EVALUATED INSIGHT.</span>
             <strong>Your backend, connected.</strong>
             <p>
-              Python and TypeScript examples for the intended HTTP integration.
+              Python and TypeScript examples for the current query API.
             </p>
             <button className="text-button" onClick={() => go("docs")}>
               Read integration docs <Icon name="arrow" size={15} />
@@ -300,9 +300,10 @@ export default function Console() {
                 />
                 <Capability
                   icon="cube"
-                  title="Query evaluation"
-                  status="Not available yet"
-                  text="The orchestration and evaluator services are not connected."
+                  title="Query inference"
+                  status="Implemented"
+                  available
+                  text="API-key-authenticated queries run through Groq using GPT-OSS 20B."
                 />
                 <Capability
                   icon="key"
@@ -315,13 +316,13 @@ export default function Console() {
               <section className="panel platform-flow">
                 <PanelTitle
                   title="How your query becomes an insight"
-                  subtitle="The platform handles model routing and answer evaluation."
+                  subtitle="The current flow validates your request and runs Groq inference."
                 />
                 <Pipeline />
                 <div className="panel-footnote">
                   <Icon name="clock" size={16} />
-                  This is the intended architecture. No model execution or
-                  evaluation is available in the current backend.
+                  Groq credentials must be configured on the backend. Multiple
+                  models and independent evaluation are planned next.
                 </div>
               </section>
               <div className="overview-entry-grid">
@@ -329,8 +330,8 @@ export default function Console() {
                   <Icon name="key" size={25} />
                   <h2>Manage application access.</h2>
                   <p>
-                    Use API keys to authenticate requests from your backend.
-                    Create and revoke application keys with your signed-in account.
+                    Create and revoke application keys with your signed-in
+                    account. Use a platform key to authenticate query requests.
                   </p>
                   <button className="button" onClick={() => go("keys")}>
                     View API keys <Icon name="arrow" size={16} />
@@ -340,8 +341,8 @@ export default function Console() {
                   <Icon name="code" size={25} />
                   <h2>Integrate from your own backend.</h2>
                   <p>
-                    Explore the proposed HTTP contract in Python and TypeScript.
-                    One request, with an API key and your context.
+                    Use the current HTTP contract in Python and TypeScript.
+                    Send a query and optional code with a platform API key.
                   </p>
                   <button className="button" onClick={() => go("docs")}>
                     Read integration docs <Icon name="arrow" size={16} />
@@ -367,8 +368,8 @@ export default function Console() {
           {section === "models" && (
             <>
               <ServiceNotice
-                title="The model roster is not connected"
-                text="The platform has not published its configured model roster yet. A read-only list will appear here when the orchestration service is connected."
+                title="One model is currently configured"
+                text="The backend uses Groq with GPT-OSS 20B. Additional models and an independent evaluator are not connected yet."
               />
               <section className="panel">
                 <PanelTitle
@@ -379,17 +380,16 @@ export default function Console() {
                   <span className="empty-icon">
                     <Icon name="cube" size={27} />
                   </span>
-                  <h2>No models reported yet</h2>
+                  <h2>GPT-OSS 20B</h2>
                   <p>
-                    Configured models will appear here automatically.
+                    Provider: Groq · Model: openai/gpt-oss-20b
                     <br />
-                    The orchestration layer will decide how each query is
-                    routed.
+                    The backend selects this model for every query.
                   </p>
                 </div>
                 <div className="panel-footnote">
-                  <Icon name="shield" size={16} />A separate evaluator checks
-                  the model answers before a final insight is returned.
+                  <Icon name="shield" size={16} />This reflects the current backend
+                  configuration. Provider availability depends on backend credentials and quota.
                 </div>
               </section>
               <section className="panel platform-flow">
@@ -406,8 +406,8 @@ export default function Console() {
               />
               <section className="panel">
                 <PanelTitle
-                  title="Evaluated queries"
-                  subtitle="Only real, completed platform requests will be listed here."
+                  title="Query history"
+                  subtitle="Persistent conversation history is not implemented yet."
                 />
                 <div className="empty-state">
                   <span className="empty-icon">

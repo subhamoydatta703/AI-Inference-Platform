@@ -45,9 +45,9 @@ export default function LandingPage() {
             <span>One evaluated insight.</span>
           </h1>
           <p>
-            One HTTP API for orchestration and evaluation.
+            One HTTP API for queries and model responses.
             <br className="desktop-only" /> Send queries and context from your
-            backend. Receive evaluated insights.
+            backend. Receive answers from GPT-OSS 20B.
           </p>
           <div className="hero-actions">
             <Link href="/console#docs" className="button primary large">
@@ -59,8 +59,8 @@ export default function LandingPage() {
           </div>
           <div className="hero-note">
             <Icon name="terminal" size={13} />
-            Account access and API-key management are live. Query evaluation is in
-            development.
+            Query inference, account access, and API-key management are live.
+            Multi-model evaluation is in development.
           </div>
           <ProductStage>
             <ProductPreview />
@@ -75,16 +75,16 @@ export default function LandingPage() {
             <span className="eyebrow">FROM QUESTION TO EVALUATED INSIGHT</span>
             <h2>More than a model response.</h2>
             <p>
-              An orchestration layer brings model answers together.
-              <br className="desktop-only" /> A separate evaluator checks them
-              before returning the final insight.
+              Today, the orchestrator runs your query through Groq.
+              <br className="desktop-only" /> Multiple models and an independent
+              evaluator are the next steps.
             </p>
           </div>
           <div className="platform-feature-grid">
             <div className="feature-product orchestration-feature">
               <div className="feature-product-header">
                 <Icon name="cube" size={18} />
-                <strong>The intended query flow</strong>
+                <strong>The current query flow</strong>
                 <span className="tag">ARCHITECTURE</span>
               </div>
               {orchestrationStages.map((stage, index) => (
@@ -100,7 +100,7 @@ export default function LandingPage() {
                 </div>
               ))}
               <div className="feature-product-footer">
-                <span>Automatic routing. Independent evaluation.</span>
+                <span>Validated queries. Groq inference.</span>
                 <Link
                   href="/console#docs"
                   aria-label="Explore HTTP integration"
@@ -119,12 +119,12 @@ export default function LandingPage() {
                 {
                   icon: "cube",
                   title: "Let orchestration handle the models",
-                  text: "The user does not select a model. The platform’s orchestration layer is responsible for routing queries to different models.",
+                  text: "The backend currently uses GPT-OSS 20B through Groq. The user does not select a model. More model integrations are planned.",
                 },
                 {
                   icon: "shield",
-                  title: "Evaluate before returning an insight",
-                  text: "A separate evaluator checks each model’s answer. Your application receives the resulting insight through one HTTP response.",
+                  title: "Independent evaluation is next",
+                  text: "A separate evaluator is planned to check multiple model answers. The current API returns a single model response.",
                 },
               ].map((feature) => (
                 <div className="feature-list-item" key={feature.title}>
@@ -155,9 +155,9 @@ export default function LandingPage() {
               <span className="developer-card-label">
                 01 / AUTHENTICATE YOUR APPLICATION
               </span>
-              <h3>Access starts with an API key.</h3>
+              <h3>Access starts with your API key.</h3>
               <p>
-                Authenticate platform requests from your own backend.
+                Authenticate queries with your platform API key.
                 <br />
                 Keep application credentials in your server environment.
               </p>
@@ -173,11 +173,11 @@ export default function LandingPage() {
                 </p>
                 <div>
                   <Icon name="shield" size={15} />
-                  <span>Server-side authentication</span>
+                  <span>Signed-in key management</span>
                 </div>
                 <div>
                   <Icon name="clock" size={15} />
-                  <span>Key service in development</span>
+                  <span>Key management available</span>
                 </div>
               </div>
             </article>
@@ -188,7 +188,7 @@ export default function LandingPage() {
               <h3>One request. No model selection.</h3>
               <p>
                 Copyable Python and TypeScript examples.
-                <br />A clearly documented, proposed HTTP contract.
+                <br />The current API-key-authenticated HTTP contract.
               </p>
               <Link href="/console#docs" className="button">
                 Read integration docs <Icon name="arrow" size={16} />
@@ -196,7 +196,7 @@ export default function LandingPage() {
               <div className="landing-code">
                 <div className="landing-code-header">
                   <span>backend.ts</span>
-                  <span>PROPOSED CONTRACT</span>
+                  <span>QUERY API</span>
                 </div>
                 <pre>
                   <code>{shortIntegrationSnippet}</code>
@@ -205,8 +205,8 @@ export default function LandingPage() {
             </article>
           </div>
           <p className="section-footnote">
-            Query evaluation is not available yet. The
-            documentation clearly marks the proposed contract.
+            Queries currently run on GPT-OSS 20B through Groq. Independent
+            evaluation and additional models are in development.
           </p>
         </section>
         <section className="landing-section workflow-section">
@@ -231,8 +231,8 @@ export default function LandingPage() {
                 target: "keys",
               },
               {
-                title: "Plan your HTTP integration",
-                text: "Read the proposed contract in Python and TypeScript. Keep API keys in your backend.",
+                title: "Connect the query API",
+                text: "Read the Python and TypeScript examples. Authenticate queries with your platform API key.",
                 target: "docs",
               },
             ].map((step, index) => (
@@ -259,19 +259,19 @@ export default function LandingPage() {
             {[
               {
                 q: "Do I need to choose a model?",
-                a: "No. The orchestration layer is responsible for routing your query to different models. A separate evaluator checks the answers and produces the final insight. The model roster will be informational only.",
+                a: "No. The orchestration layer currently sends each query to GPT-OSS 20B through Groq. Additional models and a separate evaluator are planned; users do not select models.",
               },
               {
                 q: "Can I include source code or documentation?",
-                a: "Yes. Include source code or documentation as optional context in the HTTP request sent by your backend. The Python and TypeScript examples show the proposed payload structure.",
+                a: "Yes. Send source code in the optional code field, its language in language, or documentation text as part of your query. The optional url field is passed to the model as context; the backend does not fetch the page.",
               },
               {
                 q: "How does my backend connect?",
-                a: "The intended integration uses an API key and an HTTP request containing a query and optional context. Python and TypeScript documentation shows the proposed request, response, and error handling. The query endpoint is not implemented yet.",
+                a: "Create a platform API key in the console. POST a query with optional language, code, and url fields to /api/v1/queries using Authorization: Bearer <API_KEY>. Keep the key in your backend. The platform identifies the user from the key.",
               },
               {
                 q: "What is available right now?",
-                a: "Clerk sign-in, your backend account profile, API-key listing, creation and revocation, and Python and TypeScript integration documentation are available. Query evaluation, model listings, and usage history are not available yet.",
+                a: "Clerk sign-in, account profiles, API-key management, Groq query inference, and Python and TypeScript integration docs are available. Queries require backend Groq credentials. Multiple-model evaluation and persistent usage history are not implemented yet.",
               },
             ].map((item) => (
               <details key={item.q}>
