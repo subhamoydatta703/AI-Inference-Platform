@@ -1,6 +1,6 @@
-import { type Response } from "express"
+import { type Request, type Response } from "express"
 import type { AuthenticatedRequest } from "../../middlewares/auth/authMiddleware"
-import { createApiKeyService, deleteApiKeyService, listApiKeysService } from "../../services/apiKey/apiKeyService";
+import { createApiKeyService, deleteApiKeyService, listApiKeysService, verifyApiKeyService } from "../../services/apiKey/apiKeyService";
 import type { ApiErrorResponse } from "../../utils/types/apiKey/apiKeyError";
 
 
@@ -126,3 +126,6 @@ export const deleteApiKeyController = async(req: AuthenticatedRequest, res: Resp
         
     }
 }
+
+
+

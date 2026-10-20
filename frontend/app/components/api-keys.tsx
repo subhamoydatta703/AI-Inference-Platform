@@ -171,7 +171,7 @@ function KeyPanel({ keys = [], userId, action = null, copiedId = null, error = "
         <p id="keys-availability">{create ? synced ? "Create an API key to connect your backend." : "Connecting to your stored API keys." : "Sign in to create and revoke application API keys."}</p>
         <button className="button" onClick={() => { window.location.hash = "docs"; }}>Read integration docs <Icon name="arrow" size={16} /></button>
       </div>}
-      {keys.length > 0 && <p className="muted api-key-message" id="keys-availability">Copy and save your keys now. They cannot be retrieved after leaving this page. Query evaluation is not available yet.</p>}
+      <p className="muted api-key-message" id="keys-availability">Use your platform key as an Authorization Bearer token for query requests from your backend. Copy new keys before leaving this page; their secrets cannot be retrieved later. Revoked keys stop authenticating requests.</p>
       <div className="panel-footnote"><Icon name="shield" size={16} />API keys authenticate your backend’s HTTP requests. Keep them in your server environment.</div>
     </section>
   </>;

@@ -21,21 +21,45 @@ export const queryController = async(req: AuthenticatedRequest, res: Response)=>
             })
         }
 
-        const queryData = QuerySchema.parse(req.body)
-
-        if(!queryData.query){
+        const parsed = QuerySchema.safeParse(req.body);
+        if (!parsed.success) {
             return res.status(400).json({
-                success:false,
-                message: "Please provide a valid query"
-            })
+                success: false,
+                message: "Please provide a valid query",
+                errors: parsed.error.issues,
+            });
+        }
+        const queryData = parsed.data;
+        const query: QueryFormat = {
+            query: queryData?.query,
+            url: queryData?.url,
+            language: queryData?.language,
+            code: queryData?.code,
         }
 
-        // orchstrator 
-        // const orchResponse = await orchService(userId, queryData);
-        
+        // Load provider configuration only for a valid authenticated query.
+        const { OrchestratorService } = await import('../../services/orchestrator/orchestratorService');
+        const orchestratorService = new OrchestratorService()
+        const orchResponse = await orchestratorService.run(userId, query);
 
-        
+        if (!orchResponse) {
+            return res.status(400).json({
+                success: false,
+                message: "No response from inference engine",
+            });
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Query processed successfully",
+            data: orchResponse,
+        })
     } catch (error) {
-        
+        console.error("Error in query controller:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
     }
 }

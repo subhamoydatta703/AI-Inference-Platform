@@ -1,42 +1,38 @@
 export type IntegrationLanguage = "Python" | "TypeScript";
+export const queryPath = "/api/v1/queries";
+export const exampleQuery = {
+  query: "Identify the failure modes in this implementation.",
+  language: "javascript",
+  code: "function first(items) { return items[0].name; }",
+  url: "https://example.com/docs",
+};
+export const exampleResponse = {
+  success: true,
+  message: "Query processed successfully",
+  data: {
+    userId: "<authenticated-user-id>",
+    query: { conversationId: "<server-generated-uuid>", ...exampleQuery },
+    response: "<model answer>",
+  },
+};
 
 export const shortIntegrationSnippet = [
-  "// Proposed contract — not implemented yet.",
-  'const response = await fetch(baseUrl + "/api/v1/queries", {',
+  "// Run in your backend with a platform API key.",
+  `const response = await fetch(baseUrl + "${queryPath}", {`,
   '  method: "POST",',
   "  headers: {",
   '    Authorization: "Bearer " + apiKey,',
   '    "Content-Type": "application/json",',
   "  },",
-  "  body: JSON.stringify({",
-  "    query,",
-  '    context: { type: "code", content },',
-  "  }),",
+  "  body: JSON.stringify({ query, language, code }),",
   "});",
 ].join("\n");
 
-// Proposed query contract. No orchestration endpoint exists in the backend yet.
-export const proposedQueryPath = "/api/v1/queries";
-export const exampleQuery = {
-  query: "Identify the failure modes in this implementation.",
-  context: {
-    type: "code",
-    content: "Paste the relevant source code or documentation here.",
-  },
-};
-
-export const proposedResponse = {
-  success: true,
-  data: {
-    requestId: "<request-id>",
-    insight: "<final insight produced by the evaluator>",
-  },
-};
-
 export function integrationSnippet(language: IntegrationLanguage): string {
   if (language === "Python")
-    return `# Proposed integration contract — query service is not available yet.
-# Run this in your backend. Keep the API key out of browser code.
+    return `# Run in your backend. Create a platform key in Console > API keys.
+# Keep the key in a server environment variable, never in browser code.
+# INFERENCE_BASE_URL is the platform backend origin, without /api/v1/queries.
 import json
 import os
 from urllib.error import HTTPError, URLError
@@ -44,17 +40,14 @@ from urllib.request import Request, urlopen
 
 base_url = os.environ["INFERENCE_BASE_URL"].rstrip("/")
 api_key = os.environ["INFERENCE_API_KEY"]
-
 payload = {
     "query": "Identify the failure modes in this implementation.",
-    "context": {
-        "type": "code",  # or "documentation"
-        "content": "Your source code or documentation",
-    },
+    "language": "javascript",  # optional
+    "code": "function first(items) { return items[0].name; }",  # optional
+    "url": "https://example.com/docs",  # optional valid URL
 }
-
 request = Request(
-    f"{base_url}${proposedQueryPath}",
+    f"{base_url}${queryPath}",
     data=json.dumps(payload).encode("utf-8"),
     headers={
         "Authorization": f"Bearer {api_key}",
@@ -62,86 +55,101 @@ request = Request(
     },
     method="POST",
 )
-
 try:
-    with urlopen(request, timeout=60) as response:
+    with urlopen(request, timeout=120) as response:
         result = json.load(response)
     if not result.get("success"):
-        raise RuntimeError("The platform could not evaluate the query")
-    print(result["data"]["insight"])
+        raise RuntimeError(result.get("message", "Query failed"))
+    # Print the complete API response as formatted JSON.
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 except HTTPError as error:
-    raise RuntimeError(f"Platform request failed: HTTP {error.code}") from error
+    raise RuntimeError(f"Query failed: HTTP {error.code}") from error
 except URLError as error:
     raise RuntimeError("Could not reach the platform") from error`;
 
-  return `// Proposed integration contract — query service is not available yet.
-// Node.js backend code. Never put this API key in NEXT_PUBLIC_* variables.
-const baseUrl = process.env.INFERENCE_BASE_URL?.replace(/\\/$/, "");
-const apiKey = process.env.INFERENCE_API_KEY;
+  return `// Install: npm install zod (or bun add zod).
+// Run in your backend with environment variables loaded.
+// INFERENCE_BASE_URL is the platform backend origin, e.g. http://localhost:5000.
+// Create INFERENCE_API_KEY in Console > API keys. Keep it server-side.
+import { z } from "zod";
 
-if (!baseUrl || !apiKey) {
-  throw new Error("Set INFERENCE_BASE_URL and INFERENCE_API_KEY");
+const environmentSchema = z.object({
+  INFERENCE_BASE_URL: z.url().refine((value) => {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol)
+      && url.pathname === "/" && !url.search && !url.hash
+      && !url.username && !url.password;
+  }, "Use the backend origin only, without an API path, query, or credentials"),
+  INFERENCE_API_KEY: z.string().trim().min(1),
+});
+const env = environmentSchema.parse(process.env);
+const baseUrl = new URL(env.INFERENCE_BASE_URL).origin;
+const apiKey = env.INFERENCE_API_KEY;
+
+const querySchema = z.object({
+  query: z.string().trim().min(1),
+  language: z.string().optional(),
+  code: z.string().optional(),
+  url: z.url().optional(),
+});
+type QueryRequest = z.infer<typeof querySchema>;
+
+const successSchema = z.object({
+  success: z.literal(true),
+  message: z.string(),
+  data: z.object({
+    userId: z.string(),
+    query: querySchema.extend({ conversationId: z.uuid() }),
+    response: z.string(),
+  }),
+});
+type QueryResponse = z.infer<typeof successSchema>;
+const errorSchema = z.object({
+  success: z.literal(false),
+  message: z.string(),
+});
+
+const payload: QueryRequest = querySchema.parse({
+  query: "Identify the failure modes in this implementation.",
+  language: "javascript", // optional
+  code: "function first(items) { return items[0].name; }", // optional
+  url: "https://example.com/docs", // optional valid URL
+});
+const response = await fetch(baseUrl + "${queryPath}", {
+  method: "POST",
+  headers: {
+    Authorization: \`Bearer \${apiKey}\`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(payload),
+  signal: AbortSignal.timeout(120_000),
+});
+let body: unknown;
+try {
+  body = await response.json();
+} catch {
+  throw new Error(\`Platform returned non-JSON data: HTTP \${response.status}\`);
 }
 
-type EvaluatedResponse = {
-  success: boolean;
-  data: { requestId: string; insight: string };
-};
+const failure = errorSchema.safeParse(body);
+if (!response.ok || failure.success) {
+  throw new Error(failure.success
+    ? failure.data.message
+    : \`Query failed: HTTP \${response.status}\`);
+}
 
-const payload = {
-  query: "Identify the failure modes in this implementation.",
-  context: {
-    type: "code", // or "documentation"
-    content: "Your source code or documentation",
-  },
-};
-
-try {
-  const response = await fetch(
-    baseUrl + "${proposedQueryPath}",
-    {
-      method: "POST",
-      headers: {
-        Authorization: \`Bearer \${apiKey}\`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(60_000),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(\`Platform request failed: HTTP \${response.status}\`);
-  }
-
-  const result = (await response.json()) as EvaluatedResponse;
-  if (!result.success) throw new Error("Query evaluation failed");
-  console.log(result.data.insight);
-} catch (error) {
-  console.error("Platform integration failed", error);
-  throw error;
-}`;
+const parsed = successSchema.safeParse(body);
+if (!parsed.success) {
+  throw new Error("Platform returned an unexpected response shape");
+}
+const result: QueryResponse = parsed.data;
+// Print the complete validated API response as formatted JSON.
+console.log(JSON.stringify(result, null, 2));`;
 }
 
 export const orchestrationStages = [
-  {
-    icon: "book",
-    title: "Query & context",
-    description: "Your question, with the code or documentation it needs.",
-  },
-  {
-    icon: "cube",
-    title: "Orchestration",
-    description: "The platform routes the query to different models.",
-  },
-  {
-    icon: "shield",
-    title: "Independent evaluation",
-    description: "A separate evaluator checks the model answers.",
-  },
-  {
-    icon: "bolt",
-    title: "Final insight",
-    description: "One evaluated response returns to your application.",
-  },
+  { icon: "book", title: "Query & context", description: "Your question, with optional language, code, and a URL." },
+  { icon: "shield", title: "Validation", description: "The backend verifies your API key and validates your query." },
+  { icon: "cube", title: "Groq inference", description: "The orchestrator sends your query to GPT-OSS 20B." },
+  { icon: "bolt", title: "Model response", description: "Receive the answer with a server-generated conversation ID." },
 ] as const;

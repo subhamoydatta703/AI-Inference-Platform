@@ -2,7 +2,7 @@
 import {
   exampleQuery,
   orchestrationStages,
-  proposedQueryPath,
+  queryPath,
 } from "../lib/integration";
 
 // Static illustration of backend-to-platform integration, not a query form.
@@ -49,7 +49,7 @@ export function ProductPreview() {
             Platform <Icon name="chevron" size={10} />
             <strong>HTTP integration</strong>
           </span>
-          <span className="preview-tag">Proposed API contract</span>
+          <span className="preview-tag">Platform API key</span>
         </div>
         <div className="preview-dashboard-content">
           <div className="preview-title">
@@ -64,18 +64,17 @@ export function ProductPreview() {
           <div className="preview-api-grid">
             <div className="preview-http-request">
               <span className="preview-field-label">YOUR BACKEND SENDS</span>
-              <strong>POST {proposedQueryPath}</strong>
+              <strong>POST {queryPath}</strong>
               <code>Authorization: Bearer &lt;API_KEY&gt;</code>
               <pre>{JSON.stringify(exampleQuery, null, 2)}</pre>
             </div>
             <div className="preview-http-response">
               <Icon name="shield" size={25} />
-              <h4>Evaluated response</h4>
+              <h4>Model response</h4>
               <p>
-                The intended API returns the final insight after orchestration
-                and independent evaluation.
+                The API returns the model answer and a conversation ID.
               </p>
-              <span>Query service in development</span>
+              <span>Groq · GPT-OSS 20B</span>
             </div>
           </div>
           <div className="preview-pipeline">
