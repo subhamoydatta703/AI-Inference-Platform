@@ -1,56 +1,151 @@
 # Inference frontend
 
-A responsive Next.js 16 SaaS frontend adapted from the user-selected Figmaland dark startup layout. The public website is at / and the developer console is at /console.
+Responsive Next.js 16 and React 19 website and developer console for the Inference platform. The charcoal and indigo SaaS design uses Geist typography, Lucide icons, and shared components for the model ensemble and evaluation architecture.
+
+See the [project overview](../README.md) for the complete setup flow and the [backend README](../backend/README.md) for database setup, the API contract, authentication, and request limits.
 
 ## Run locally
 
-From frontend:
+Run from `frontend/`:
 
 ```powershell
 bun install
+Copy-Item .env.example .env
+```
+
+Set the values in `.env` before starting:
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+```
+
+Copy the example environment file only on first setup; retain your existing values on later runs. After configuring `.env`, start the frontend:
+
+```powershell
 bun run dev
 ```
 
-Open http://localhost:3000. The console is at http://localhost:3000/console.
+Use a publishable key from the same Clerk application as the backend. Open [the website](http://localhost:3000) or [the developer console](http://localhost:3000/console). Start the Express backend separately on port 5000 and ensure its CORS configuration allows your frontend origin.
 
-## Authentication and backend
+The public pages and documentation render without Clerk configured. Sign-in and connected account/key management require the publishable key. Browser sign-in and direct API requests do not require a frontend Clerk secret. Optional Next.js server-side authentication and the `/api/me` proxy require `CLERK_SECRET_KEY`; the proxy origin uses `BACKEND_URL`, defaulting to `http://localhost:5000`. See [.env.example](.env.example).
 
-Browser sign-in requires only NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY from the same Clerk application used by the backend. Set NEXT_PUBLIC_BACKEND_URL to your Express backend origin (defaults to http://localhost:5000). Keep CLERK_SECRET_KEY in backend/.env; the frontend does not need it for browser sign-in or direct profile requests. Optional Next.js server-side authentication and the /api/me proxy still require a frontend server secret.
+For a production build:
 
-Run the Express backend separately using bun run dev from backend. It needs its existing DATABASE_URL and Clerk credentials configured and its Prisma migrations applied. Sign in using the header button, then visit Console > Account. The frontend automatically obtains a Clerk session token and calls /api/v1/users/me directly on the backend. CORS must allow the frontend origin. A Retry connection button is available if the backend is unavailable.
+```powershell
+bun run build
+bun run start
+```
 
-The general browser tests run with Clerk disabled. The separate test:auth check uses your configured publishable key to open the real Clerk sign-in UI without a frontend secret; it does not submit credentials. A complete sign-in and database synchronization require an interactive account.
+The build downloads Geist fonts through `next/font/google`, so Google Fonts must be reachable.
 
-## Product flow and availability
+## Routes and navigation
 
-The current flow is query with optional language/code/URL -> API-key authentication and schema validation -> orchestration -> three candidate model answers through Groq and OpenRouter -> evaluation -> final answer. Users do not choose models. Candidate calls run sequentially: GPT-OSS 20B and GPT-OSS 120B through Groq, then nvidia/nemotron-3-ultra-550b-a55b:free through OpenRouter. GPT-OSS 120B evaluates the candidates and selects the best acceptable answer unchanged. Failed or blank candidates are excluded by the evaluator; an evaluation failure aborts the request with 500. If none are acceptable, a successful response contains the text No acceptable candidate answer is available.
+| Route | Purpose |
+| --- | --- |
+| `/` | Product landing page, query workflow, models, evaluation, integration overview, and FAQ |
+| `/console#overview` | Getting-started steps, platform capabilities, workflow, and model ensemble |
+| `/console#keys` | Create, reveal/copy newly created keys, and revoke application API keys |
+| `/console#models` | Three candidate models, orchestration, and evaluation architecture |
+| `/console#history` | Availability notice for future usage and history reporting |
+| `/console#account` | Signed-in identity and synchronized platform profile |
+| `/console#docs` | Python/TypeScript examples, request/response reference, and error handling |
+| `/api/me` | Optional authenticated server-side profile proxy |
 
-Queries and optional code/documentation context are sent by the integrating backend through HTTP. The website has no query workspace, playground, or browser submission form. There are no simulated answers, invented activity metrics, example API keys, or assumed configured model names. Existing browser-local demo keys are ignored.
+The console uses hash navigation rather than separate pages for each section. Legacy `#playground` and `#workspace` links open integration docs; `#usage` opens history and `#settings` opens account. Mobile navigation, console search, keyboard search shortcut, FAQ expansion, documentation tabs, and clipboard actions are interactive.
 
-The API keys page calls GET /api/v1/api-keys, POST /api/v1/api-keys, and DELETE /api/v1/api-keys/:id with a Clerk session token to create and revoke real backend keys (up to 3 per account). Use these platform keys as Bearer credentials for queries from your backend. The page loads stored key metadata and refreshes it after mutations. A successful revoke is checked against the refreshed list. Raw secrets stay in memory only during the current page session; existing keys can be revoked after refresh but cannot be retrieved because the backend stores only hashes. The frontend never generates credentials. The model panel describes the current backend configuration; history remains unavailable.
+## Product presentation
 
-Integration docs have exactly two language tabs: Python and TypeScript. Both examples call the live POST /api/v1/queries route using a platform API key (INFERENCE_API_KEY) as an Authorization Bearer token. Sign in with Clerk only to create/manage keys; query clients do not need a Clerk session. Send query plus optional language, code, and url fields. The response contains data.conversationId, data.query (the original query and optional context), and data.response (the final evaluated answer). User IDs, candidate answers, and model rankings are not included. Each request creates a new conversation; history and follow-up context are not persisted. A URL is passed as context without fetching its contents. The Express backend requires GROQ_API_KEY and OPENROUTER_API_KEY; provider secrets never enter frontend code. Invalid query fields return 400, missing/invalid/revoked keys return 401, and verification-service or inference failures return 500.
+The public query workflow is:
 
-For the copyable client examples, `INFERENCE_BASE_URL` is the platform Express backend origin: `http://localhost:5000` locally, or the deployed backend origin such as `https://your-service.onrender.com`. Do not include `/api/v1/queries` or use the frontend origin. Set this and `INFERENCE_API_KEY` in the calling application's server environment. The TypeScript example requires `zod` (`npm install zod` or `bun add zod`); schemas validate configuration, request data, and the unknown JSON response before exposing inferred types. No Zod dependency is needed by the frontend to display the example.
+**Query and context → orchestration → model responses → evaluation → final answer.**
+
+The three candidate models are **GPT-OSS 20B**, **GPT-OSS 120B**, and **Nemotron 3 Ultra**. Model coordination is automatic. The evaluation section describes validation, assessment, and selection without naming its model. Product-facing workflow sections omit provider details and conversation identifiers. Technical response fields remain in the integration reference so the examples match the backend contract.
+
+The landing page includes a split hero, architecture summary, five-stage workflow, model cards, evaluation layer, developer integration cards, console illustration, FAQ, and calls to open the console or documentation. The console shares the same visual foundations, including responsive cards, loading/error/empty states, and a getting-started panel.
+
+Queries are submitted by integrating applications from their backends. The website has no query playground or browser query form. Usage/history reporting is not connected; no fabricated metrics, credentials, or generated answers are displayed. The console preview is an illustration rather than live activity.
+
+## Connected account and API keys
+
+The frontend obtains a Clerk session token and calls `/api/v1/users/me` directly. The backend synchronizes the local account; a missing email claim or other initialization error is shown with retry/refresh controls.
+
+Key management uses `GET /api/v1/api-keys`, `POST /api/v1/api-keys`, and `DELETE /api/v1/api-keys/:id` with a Clerk session token. Accounts can store **three keys**. Stored metadata is refreshed after mutations, and a successful revoke is checked against the returned list.
+
+New secrets stay in memory during the current page visit. Copy them before leaving; existing secrets cannot be retrieved after refresh because the backend stores hashes. The frontend never generates credentials or restores old browser-local demo keys.
+
+Each account shares an allowance of **10 requests per minute and 100 per day** across its authenticated backend routes and API keys. HTTP 429 responses include a `Retry-After` header; the integration docs explain when to retry. Exact counting behavior is documented in the backend README.
+
+## Integrating your application
+
+The documentation has Python and TypeScript tabs. Both examples call `POST /api/v1/queries` using a platform key as `Authorization: Bearer <INFERENCE_API_KEY>`. Clerk sessions are used for account/key management, not query execution.
+
+Set these variables in the integrating application's server environment:
+
+```env
+INFERENCE_BASE_URL=http://localhost:5000
+INFERENCE_API_KEY=your_platform_api_key
+```
+
+`INFERENCE_BASE_URL` is the Express backend origin, without an API path. Keep the key server-side. The TypeScript example requires `zod` in the integrating application (`bun add zod` or `npm install zod`); the frontend itself does not need it to display the snippet.
+
+Send a required non-empty `query` and optional `language`, `code`, and valid `url`. Read `data.response` for the selected answer and `data.query` for the original input. The response also carries `data.conversationId` as technical metadata. Answers use Markdown by default and retain the selected candidate's format. Each request is independent: persisted conversation history, follow-up context, and URL fetching are not implemented. The endpoint returns complete JSON rather than streaming tokens.
+
+## Source layout
+
+| File or directory | Responsibility |
+| --- | --- |
+| `app/components/landing-page.tsx` | Public product page |
+| `app/components/developer-console.tsx` | Console shell and section navigation |
+| `app/components/query-architecture.tsx` | Shared model names, model cards, and evaluation architecture |
+| `app/components/api-keys.tsx` | Connected key-management UI |
+| `app/components/account.tsx` | Clerk account UI and profile synchronization |
+| `app/components/integration-docs.tsx` | Integration documentation UI |
+| `app/lib/api.ts` | Authenticated account/key requests and response validation |
+| `app/lib/integration.ts` | Copyable snippets, example payloads, and workflow content |
+| `app/lib/platform.ts` | Candidate model metadata and enforced key limit |
+| `app/globals.css` | Base styles and existing component styling |
+| `app/saas.css` | Shared SaaS presentation and responsive refinements |
+
+Both stylesheets are imported by `app/layout.tsx` and should be included in a complete checkout.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Account or key requests cannot reach the API | Start the backend, confirm `NEXT_PUBLIC_BACKEND_URL`, and allow the frontend origin in backend CORS |
+| A newly signed-in account cannot initialize | Use the same Clerk application in both services and include the user's email in the session `email` claim |
+| HTTP 429 | Wait for the seconds reported in `Retry-After`; account, key-management, and query requests share the allowance |
+| Missing `saas.css` import | Confirm `app/saas.css` exists in the checkout, then restart the development server if the error persists |
+| Another development server is already running | Use its reported URL or stop that server before starting another process with the same Next.js output directory |
+| Production build cannot download fonts | Allow the build environment to reach Google Fonts |
 
 ## Checks
 
 ```powershell
 bun run lint
+bunx tsc --noEmit
+bun run test:unit
 bun run build
 bunx playwright install chromium
 bun run test:e2e
-bun run test:unit
-bun run test:auth
 ```
 
-If the frontend is already running, point the real-Clerk UI check to it instead of starting another dev server:
+The general browser suite runs with Clerk disabled on port 3100 using the isolated `.next-tests` directory. It covers desktop/mobile layouts, navigation, FAQ behavior, query-flow copy, model/evaluation content, documentation tabs and clipboard output, signed-out key access, account navigation, legacy links, and viewport containment. Screenshots are written to `test-results/`.
+
+The separate Clerk UI check uses the configured publishable key and does not submit credentials:
 
 ```powershell
-$env:AUTH_TEST_BASE_URL = 'http://localhost:3002'
 bun run test:auth
 ```
 
-Browser checks cover desktop/mobile layout, retired query-link handling, Python/TypeScript code copying against the current query contract, signed-out API-key access, configured model information, unavailable history, ignored legacy mock keys, account navigation, and legacy links. Tests use port 3100, cleared authentication keys, and an isolated .next-tests build directory so an existing dev server can stay running.
+It starts a separate server on port 3111 by default. To use an existing frontend server:
 
-See DESIGN.md for the Figma reference, visual decisions, routes, and integration boundaries.
+```powershell
+$env:AUTH_TEST_BASE_URL = 'http://localhost:3000'
+bun run test:auth
+```
+
+Latest redesign verification: production build, lint, TypeScript, 11 API unit tests, and 10 desktop/mobile browser tests passed. Live sign-in, authenticated key mutations, inference, and real rate-limit recovery were not exercised by that visual verification.
+
+See [DESIGN.md](DESIGN.md) for design decisions and [design-qa.md](design-qa.md) for screenshots, comparisons, and verification details.
