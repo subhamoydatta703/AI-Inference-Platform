@@ -4213,3 +4213,6 @@ input[type="range"] {
 .integration-access-card > div > svg {
   color: #6c76ac;
 }
+.platform-model-id {
+  overflow-wrap: anywhere;
+}

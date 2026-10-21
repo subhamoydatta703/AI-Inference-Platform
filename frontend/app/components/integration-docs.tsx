@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "./icons";
+import { maxApiKeys } from "../lib/platform";
 import {
   exampleQuery,
   integrationSnippet,
@@ -20,8 +21,9 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <h2>Send a query. Receive an evaluated answer.</h2>
           <p>
             Send a query with optional code, language, and a URL. The current
-            platform collects three model answers, evaluates them against your
-            original query, and returns one final answer. You do not select a model.
+            platform requests three candidate answers through Groq and OpenRouter,
+            evaluates them against your original query, and returns the best
+            acceptable answer unchanged. You do not select a model.
           </p>
         </div>
         <div className="availability-notice">
@@ -31,7 +33,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             <p>
               Send your platform API key as an Authorization Bearer token.
               The backend identifies your account from the key; no user ID
-              belongs in the request body. The platform also needs Groq credentials configured.
+              belongs in the request body. The platform also needs Groq and OpenRouter credentials configured.
             </p>
           </div>
         </div>
@@ -43,7 +45,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
               <p>
                 Sign in, open API keys, and create a key. Copy it immediately
                 and store it as INFERENCE_API_KEY in your backend. Existing
-                key secrets cannot be retrieved. You can create up to 5 keys.
+                key secrets cannot be retrieved. You can create up to {maxApiKeys} keys.
               </p>
             </div>
           </div>
@@ -63,7 +65,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
               <h3>Receive the evaluated answer</h3>
               <p>
                 Both examples print the complete JSON response. Read
-                data.response for the final Markdown answer,
+                data.response for the selected answer (Markdown by default),
                 data.query for the original query, and data.conversationId for
                 its identifier. Model rankings and user IDs are not part of
                 this response. Each request starts a new conversation;
@@ -140,10 +142,10 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
               </button>
             </div>
             <p>
-              The API returns a JSON object. data.response contains Markdown
-              text; escaped newlines such as {"\\n"} are normal inside JSON strings.
-              Render that field as Markdown in your application to display
-              headings, tables, and code blocks.
+              The API returns a JSON object. data.response contains the selected
+              answer text, preserving its original format; escaped newlines such
+              as {"\\n"} are normal inside JSON strings. Answers use Markdown by
+              default; render that field according to the format you requested.
             </p>
             <pre className="code-block">
               <code>{JSON.stringify(exampleResponse, null, 2)}</code>
@@ -170,8 +172,8 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <h3>Keep API keys in your backend</h3>
           <p>
             Your application uses INFERENCE_API_KEY for platform requests.
-            GROQ_API_KEY is a separate provider credential used only by the
-            platform&apos;s Express backend. Never put either secret in browser
+            GROQ_API_KEY and OPENROUTER_API_KEY are separate provider credentials
+            used only by the platform&apos;s Express backend. Never put these secrets in browser
             code or commit it to your repository.
           </p>
           <code>INFERENCE_BASE_URL</code>
@@ -182,9 +184,12 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <p>400: invalid request, with validation issues in errors. 401: missing
             or invalid API key, including revoked keys. 500: authentication
             service or query processing failed.</p>
-          <p>The backend currently requires all three model calls and evaluation
-            to succeed. A provider failure returns 500 rather than a partial answer.
-            Requests may take longer than a single model call; the examples use
+          <p>Candidate calls run sequentially, followed by evaluation. Failed or
+            blank candidates are passed to the evaluator for exclusion; an evaluation
+            failure returns 500. If no candidate is acceptable, data.response contains
+            {" "}<code>No acceptable candidate answer is available.</code> in a successful response.</p>
+          <p>The endpoint returns one complete JSON response; it does not stream
+            tokens to clients. Requests may take longer than a single model call; the examples use
             a 120-second client timeout, which you can adjust for your deployment.</p>
         </section>
         <section className="panel">

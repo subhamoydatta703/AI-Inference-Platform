@@ -3,6 +3,7 @@ import { AccountButton } from "./account";
 import { Brand, Icon, type IconName } from "./icons";
 import { ProductPreview } from "./product-preview";
 import { ProductStage } from "./product-stage";
+import { maxApiKeys } from "../lib/platform";
 import {
   orchestrationStages,
   shortIntegrationSnippet,
@@ -60,7 +61,7 @@ export default function LandingPage() {
           <div className="hero-note">
             <Icon name="terminal" size={13} />
             Query inference, account access, and API-key management are live.
-            Three model answers are combined through evaluation.
+            Three candidate answers are reviewed to select one final answer.
           </div>
           <ProductStage>
             <ProductPreview />
@@ -75,9 +76,9 @@ export default function LandingPage() {
             <span className="eyebrow">FROM QUESTION TO EVALUATED INSIGHT</span>
             <h2>More than a model response.</h2>
             <p>
-              The orchestrator gathers three candidate answers through Groq.
+              The orchestrator gathers candidate answers through Groq and OpenRouter.
               <br className="desktop-only" /> An evaluation step checks them
-              against your query and produces one final answer.
+              against your query and selects one final answer.
             </p>
           </div>
           <div className="platform-feature-grid">
@@ -100,7 +101,7 @@ export default function LandingPage() {
                 </div>
               ))}
               <div className="feature-product-footer">
-                <span>Validated queries. Groq inference.</span>
+                <span>Validated queries. Multiple providers.</span>
                 <Link
                   href="/console#docs"
                   aria-label="Explore HTTP integration"
@@ -119,12 +120,12 @@ export default function LandingPage() {
                 {
                   icon: "cube",
                   title: "Let orchestration handle the models",
-                  text: "The backend gathers answers from GPT-OSS 20B, GPT-OSS 120B, and Qwen 3.8 27B through Groq. You do not select a model.",
+                  text: "The backend gathers answers from GPT-OSS 20B and GPT-OSS 120B through Groq, and Nemotron 3 Ultra through OpenRouter. You do not select a model.",
                 },
                 {
                   icon: "shield",
                   title: "Receive one evaluated answer",
-                  text: "An evaluation step reviews the candidates against your original query and synthesizes a final answer. Model rankings are not part of the response.",
+                  text: "An evaluation step reviews the candidates against your original query and selects the best acceptable answer unchanged. Model rankings are not part of the response.",
                 },
               ].map((feature) => (
                 <div className="feature-list-item" key={feature.title}>
@@ -168,7 +169,7 @@ export default function LandingPage() {
                 <Icon name="key" size={28} />
                 <strong>Application API keys</strong>
                 <p>
-                  Create and revoke up to 5 keys per account from the developer
+                  Create and revoke up to {maxApiKeys} keys per account from the developer
                   console.
                 </p>
                 <div>

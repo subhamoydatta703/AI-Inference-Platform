@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { minuteLimiter, dailyLimiter } from "../../middlewares/rateLimit/rateLimitMiddleware";
 import type { NextFunction, Request, Response } from "express";
 import type { Server } from "node:http";
 
@@ -50,6 +51,14 @@ let server: Server;
 let baseUrl: string;
 const headers = { Authorization: "Bearer test-session" };
 const queryHeaders = { Authorization: "Bearer test-platform-key", "Content-Type": "application/json" };
+
+// Isolate scenarios while exercising the real shared limiter instances.
+beforeEach(() => {
+  for (const userId of ["user-test", "key-owner"]) {
+    minuteLimiter.resetKey(userId);
+    dailyLimiter.resetKey(userId);
+  }
+});
 
 beforeAll(async () => {
   const { default: app } = await import("../../app");
@@ -216,5 +225,25 @@ describe("mounted API routes", () => {
     expect((await fetch(`${baseUrl}/api/v1/api-keys/missing`, { method: "DELETE", headers })).status).toBe(404);
     deleteKey.mockResolvedValueOnce({ success: false, message: "Internal server error" });
     expect((await fetch(`${baseUrl}/api/v1/api-keys/key-id`, { method: "DELETE", headers })).status).toBe(500);
+  });
+
+  test("shares the user's quota across profile, queries, and key management", async () => {
+    expect((await fetch(`${baseUrl}/api/v1/users/me`, { headers })).status).toBe(200);
+    for (let i = 0; i < 9; i++) {
+      verifyKey.mockResolvedValueOnce({ success: true, data: { userId: "user-test" } });
+      const response = await fetch(`${baseUrl}/api/v1/queries`, {
+        method: "POST", headers: { ...queryHeaders, Authorization: `Bearer different-key-${i}` },
+        body: JSON.stringify({ query: "Explain this" }),
+      });
+      expect(response.status).toBe(200);
+    }
+    const calls = listKeys.mock.calls.length;
+    const denied = await fetch(`${baseUrl}/api/v1/api-keys`, { headers: { ...headers, Origin: "http://localhost:3000" } });
+    expect(denied.status).toBe(429);
+    expect(Number(denied.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect(Number(denied.headers.get("Retry-After"))).toBeLessThanOrEqual(60);
+    expect(denied.headers.get("Access-Control-Expose-Headers")).toContain("Retry-After");
+    expect(listKeys.mock.calls.length).toBe(calls);
+    expect((await fetch(`${baseUrl}/health`)).status).toBe(200);
   });
 });

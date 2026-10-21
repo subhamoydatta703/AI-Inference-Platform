@@ -1,5 +1,13 @@
 # backend
 
+## Request limits
+
+Authenticated API routes share a per-user allowance of 10 requests per rolling minute and 100 requests per rolling 24 hours. The middleware runs after Clerk or platform-key authentication, using the verified user ID; using another key for the same account does not bypass the limits. Profile, key management, and query requests all count, including requests whose controllers return errors. Rejected authentication, health checks, CORS preflight, and rate-limited requests do not consume the allowance.
+
+Exceeding either limit returns HTTP 429 with `{ success: false, code: "RATE_LIMIT_EXCEEDED", message, retryAfter }`. The `Retry-After` header and `retryAfter` body field give the wait in seconds until both limits allow a request. Browser clients can read the header through CORS.
+
+Counters are kept in memory per backend process and reset on restart. Multiple replicas need a shared store such as Redis to enforce a single deployment-wide allowance.
+
 To install dependencies:
 
 ```bash

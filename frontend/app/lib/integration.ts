@@ -90,7 +90,7 @@ const apiKey = env.INFERENCE_API_KEY;
 
 const querySchema = z.object({
   query: z.string().trim().min(1),
-  language: z.string().optional(),
+  language: z.string().trim().optional(),
   code: z.string().optional(),
   url: z.url().optional(),
 });
@@ -154,6 +154,6 @@ console.log(JSON.stringify(result, null, 2));`;
 export const orchestrationStages = [
   { icon: "book", title: "Query & context", description: "Your question, with optional language, code, and a URL." },
   { icon: "shield", title: "Validation", description: "The backend verifies your API key and validates your query." },
-  { icon: "cube", title: "Model answers", description: "Three models generate candidate answers for evaluation." },
-  { icon: "bolt", title: "Evaluated answer", description: "Receive one final answer with its query and conversation ID." },
+  { icon: "cube", title: "Model answers", description: "Groq and OpenRouter supply three candidate answers for evaluation." },
+  { icon: "bolt", title: "Evaluated answer", description: "The evaluator selects an acceptable answer and returns it with the query and conversation ID." },
 ] as const;

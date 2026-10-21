@@ -1,5 +1,5 @@
 
-import groq from "../../../config/llm/llmConfig";
+import {groq} from "../../../config/llm/llmConfig";
 import type { EvaluationResultFormat } from "../../../utils/types/evaluation/evaluationResult";
 import type { llmResponseFormat } from "../../../utils/types/llm/llmResponse";
 import type { OrchestratorResultFormat } from "../../../utils/types/orchestrator/orchestratorResult";
@@ -22,7 +22,7 @@ export class GroqService {
     
         try {
             
-            const response = await groq.chat.completions.create({
+            const response = await this.client.chat.completions.create({
     
                 messages: [
                     { role: "system", content: SYSTEM_PROMPT },
@@ -32,7 +32,7 @@ export class GroqService {
                     },
                 ],
                 model: model,
-                reasoning_effort: "medium",
+                
                 
                 
                 
