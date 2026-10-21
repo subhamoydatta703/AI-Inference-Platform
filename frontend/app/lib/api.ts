@@ -1,3 +1,5 @@
+import { maxApiKeys } from "./platform";
+
 export interface PlatformProfile {
   id: string;
   email: string;
@@ -36,6 +38,8 @@ async function apiKeyRequest(token: string, path: string, method: "GET" | "POST"
   if (response.status === 401)
     throw new Error("Your session could not be verified. Please sign in again.");
   const result = await response.json();
+  if (response.status === 403 && result.code === "MAX_LIMIT_EXCEEDED")
+    throw new Error(`You have reached the maximum limit of ${maxApiKeys} API keys. Delete an existing key to create another.`);
   if (!response.ok || result.success !== true)
     throw new Error(result.message || "The API-key request failed. Please try again.");
   return result;
@@ -90,11 +94,11 @@ export async function getPlatformProfile(
     throw new Error(
       "Your session could not be verified. Please sign in again.",
     );
-  if (!response.ok)
-    throw new Error(
-      "The account service could not load your profile. Please try again.",
-    );
   const result = await response.json();
+  if (!response.ok || result.success === false)
+    throw new Error(
+      result.message || "The account service could not load your profile. Please try again.",
+    );
   if (
     !result.success ||
     typeof result.data?.id !== "string" ||

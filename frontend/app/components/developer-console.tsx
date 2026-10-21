@@ -8,6 +8,7 @@ import { useAuthAvailable } from "./auth-availability";
 import { Brand, Icon, type IconName } from "./icons";
 import { IntegrationDocs } from "./integration-docs";
 import { orchestrationStages } from "../lib/integration";
+import { candidateModels, evaluationModel, maxApiKeys } from "../lib/platform";
 
 const sections = [
   {
@@ -310,7 +311,7 @@ export default function Console() {
                   title="API-key service"
                   status="Available"
                   available
-                  text="Create and revoke up to 5 API keys per account."
+                  text={`Create and revoke up to ${maxApiKeys} API keys per account.`}
                 />
               </div>
               <section className="panel platform-flow">
@@ -369,31 +370,29 @@ export default function Console() {
             <>
               <ServiceNotice
                 title="Three candidate models and one evaluation step"
-                text="Groq hosts GPT-OSS 20B, GPT-OSS 120B, and Qwen 3.8 27B. GPT-OSS 120B also evaluates the collected answers. The API returns a final answer, not a winning model."
+                text="Groq hosts GPT-OSS 20B and GPT-OSS 120B. OpenRouter supplies Nemotron 3 Ultra. GPT-OSS 120B selects the best acceptable candidate answer and returns its text unchanged. Model rankings stay internal."
               />
               <section className="panel">
                 <PanelTitle
                   title="Models used by the platform"
                   subtitle="Informational only. Users do not choose a model."
                 />
-                <div className="empty-state">
+                {candidateModels.map((model) => <div className="empty-state" key={model.id}>
                   <span className="empty-icon">
                     <Icon name="cube" size={27} />
                   </span>
-                  <h2>GPT-OSS 20B</h2>
+                  <h2>{model.name}</h2>
                   <p>
-                    Provider: Groq · Model: openai/gpt-oss-20b
+                    Provider: {model.provider} · Model: <code className="platform-model-id">{model.id}</code>
                     <br />
                     One of three candidate models used for each query.
                     <br />
-                    Other candidates: openai/gpt-oss-120b and qwen/qwen3.8-27b.
-                    <br />
-                    Evaluation: openai/gpt-oss-120b.
                   </p>
-                </div>
+                </div>)}
                 <div className="panel-footnote">
                   <Icon name="shield" size={16} />This reflects the current backend
-                  configuration. Provider availability depends on backend credentials and quota.
+                  configuration. Evaluation uses {evaluationModel.id} through {evaluationModel.provider}.
+                  Provider availability depends on Groq and OpenRouter credentials and quota.
                 </div>
               </section>
               <section className="panel platform-flow">

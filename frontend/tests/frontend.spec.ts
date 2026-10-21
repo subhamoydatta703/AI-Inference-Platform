@@ -86,6 +86,7 @@ test("API keys ignore old demo records and require sign-in for creation", async 
   await expect(
     page.getByRole("button", { name: "Create API key", exact: true }),
   ).toBeDisabled();
+  await expect(page.getByText("Up to 3 keys per account.", { exact: false })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "No key data available", exact: true }),
   ).toBeVisible();
@@ -140,6 +141,8 @@ test("docs contain only Python and TypeScript and copy the live backend contract
       exact: true,
     }),
   ).toBeVisible();
+  await expect(page.getByText("No acceptable candidate answer is available.", { exact: true })).toBeVisible();
+  await expect(page.getByText("GROQ_API_KEY and OPENROUTER_API_KEY", { exact: false })).toBeVisible();
   await expectFitsViewport(page);
   await page.screenshot({
     path: `test-results/docs-${testInfo.project.name}.png`,
@@ -155,6 +158,11 @@ test("models reflect the backend and history stays unavailable with working acco
     page.getByRole("heading", { name: "GPT-OSS 20B", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Provider: Groq · Model: openai/gpt-oss-20b", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "GPT-OSS 120B", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nemotron 3 Ultra", exact: true })).toBeVisible();
+  await expect(page.getByText("Provider: OpenRouter · Model: nvidia/nemotron-3-ultra-550b-a55b:free", { exact: false })).toBeVisible();
+  await expect(page.getByText("qwen/qwen3.8-27b", { exact: false })).toHaveCount(0);
+  await expectFitsViewport(page);
   await expect(page.getByRole("combobox")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /Open playground|Select model/ }),

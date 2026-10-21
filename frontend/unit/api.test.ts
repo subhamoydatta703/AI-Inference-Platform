@@ -53,11 +53,11 @@ describe("authenticated API-key lifecycle", () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  test("surfaces the backend limit and missing-key errors", async () => {
+  test("uses the enforced three-key limit despite the backend's stale error text", async () => {
     const request = spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json({ success: false, code: "MAX_LIMIT_EXCEEDED", message: "You have reached the maximum limit of 5 API keys." }, { status: 403 }),
     );
-    await expect(createPlatformApiKey("token")).rejects.toThrow("maximum limit of 5");
+    await expect(createPlatformApiKey("token")).rejects.toThrow("maximum limit of 3 API keys");
     request.mockResolvedValue(Response.json({ success: false, message: "API key not found" }, { status: 404 }));
     await expect(deletePlatformApiKey("token", "missing")).rejects.toThrow("API key not found");
   });
@@ -71,6 +71,14 @@ describe("authenticated API-key lifecycle", () => {
 });
 
 describe("direct authenticated profile requests", () => {
+  test("preserves backend profile initialization errors so users can resolve them", async () => {
+    const message = "No email address found in session token. Please ensure session token claims are configured in Clerk.";
+    spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ success: false, message }, { status: 400 }),
+    );
+    await expect(getPlatformProfile("session-token")).rejects.toThrow(message);
+  });
+
   test("calls the configured backend with a Clerk bearer token", async () => {
     process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:5000/";
     const profile = { id: "user_test", email: "developer@example.com" };

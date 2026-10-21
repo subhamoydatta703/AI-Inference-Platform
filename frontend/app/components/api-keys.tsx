@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPlatformApiKey, deletePlatformApiKey, getPlatformApiKeys, type PlatformApiKey } from "../lib/api";
 import { useAuthAvailable } from "./auth-availability";
+import { maxApiKeys } from "../lib/platform";
 import { Icon } from "./icons";
 
 export function ApiKeys() {
@@ -133,17 +134,18 @@ function KeyPanel({ keys = [], userId, action = null, copiedId = null, error = "
       <Icon name="clock" size={19} />
       <div>
         <strong>API-key creation and revocation are available</strong>
-        <p>Up to 5 keys per account. Your stored keys are loaded from the backend. Revoking a key deletes it and frees a slot. Copy new keys before leaving this page; existing secrets cannot be retrieved.</p>
+        <p>Up to {maxApiKeys} keys per account. Your stored keys are loaded from the backend. Revoking a key deletes it and frees a slot. Copy new keys before leaving this page; existing secrets cannot be retrieved.</p>
       </div>
     </div>
     <section className="panel api-keys-panel" aria-busy={busy}>
       <div className="panel-heading">
         <div><h2>Application API keys</h2><p>Authenticate calls from your own backend.</p></div>
-        <button className="button primary" disabled={!create || !synced || busy || keys.length >= 5} aria-describedby="keys-availability" onClick={create}>
+        <button className="button primary" disabled={!create || !synced || busy || keys.length >= maxApiKeys} aria-describedby="keys-availability" onClick={create}>
           {action === "create" ? <span className="loading-spinner" aria-hidden="true" /> : <Icon name="plus" size={16} />}
           {action === "create" ? "Creating…" : "Create API key"}
         </button>
       </div>
+      {synced && keys.length >= maxApiKeys && <p className="muted api-key-message" role="status">Your account has reached the {maxApiKeys}-key limit. Revoke an existing key to create another.</p>}
       {error && <div className="error-message api-key-message" role="alert">{error}{retry && <button className="button small" disabled={busy} onClick={retry}>Retry loading keys</button>}</div>}
       <span className="sr-only" role="status">{action === "load" ? "Loading API keys…" : action === "create" ? "Creating API key…" : action?.startsWith("delete:") ? "Deleting API key…" : ""}</span>
       {keys.length ? <ul className="api-key-list" aria-label="Application API keys">

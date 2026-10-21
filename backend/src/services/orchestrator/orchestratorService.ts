@@ -3,6 +3,7 @@ import type { EvaluationResultFormat } from "../../utils/types/evaluation/evalua
 import type { OrchestratorResultFormat } from "../../utils/types/orchestrator/orchestratorResult";
 import type { QueryFormat } from "../../utils/types/query/queryFormat";
 import { GroqService } from "../llmProvider/groq/groqService";
+import { OpenRouterService } from "../llmProvider/openrouter/openrouterService";
 
 
 
@@ -11,11 +12,13 @@ export class OrchestratorService {
     
     private conversationId: string;
     private groqService: GroqService;
+    private openRouterService: OpenRouterService;
     // private toolPicker: ToolPicker;
     
 
     constructor(){
         this.groqService = new GroqService();
+        this.openRouterService = new OpenRouterService();
         this.conversationId = `${crypto.randomUUID()}`
         
         
@@ -44,7 +47,7 @@ export class OrchestratorService {
                   //   throw response2.error;
                   // }
 
-                  const response3 = await this.groqService.generateResponse(userId, query, "qwen/qwen3.8-27b");
+                  const response3 = await this.openRouterService.generateResponse(userId, query, "nvidia/nemotron-3-ultra-550b-a55b:free");
                   // if(response3.error){
                   //   throw response3.error;
                   // }
@@ -53,7 +56,7 @@ export class OrchestratorService {
                     result: [
                         {model: "openai/gpt-oss-20b", response: response},
                         {model: "openai/gpt-oss-120b", response: response2},
-                        {model: "qwen/qwen3.8-27b", response: response3}
+                        {model: "nvidia/nemotron-3-ultra-550b-a55b:free", response: response3}
                     ]
                   }
 

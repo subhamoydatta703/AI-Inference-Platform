@@ -46,7 +46,7 @@ export const createApiKeyService = async (userId: string) => {
           userId: userId
         }
       })
-      if (apiKeyCount >= 5) {
+      if (apiKeyCount >= 3) {
         return {
           success: false,
           message: "MAX_LIMIT_EXCEEDED",
