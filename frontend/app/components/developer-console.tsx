@@ -303,7 +303,7 @@ export default function Console() {
                   title="Query inference"
                   status="Implemented"
                   available
-                  text="API-key-authenticated queries run through Groq using GPT-OSS 20B."
+                  text="Three model answers are evaluated into one final response, authenticated with your platform key."
                 />
                 <Capability
                   icon="key"
@@ -316,13 +316,13 @@ export default function Console() {
               <section className="panel platform-flow">
                 <PanelTitle
                   title="How your query becomes an insight"
-                  subtitle="The current flow validates your request and runs Groq inference."
+                  subtitle="The platform validates your request, gathers model answers, and evaluates them."
                 />
                 <Pipeline />
                 <div className="panel-footnote">
                   <Icon name="clock" size={16} />
-                  Groq credentials must be configured on the backend. Multiple
-                  models and independent evaluation are planned next.
+                  Provider credentials and quota must cover all three candidate
+                  model calls and the evaluation call.
                 </div>
               </section>
               <div className="overview-entry-grid">
@@ -368,8 +368,8 @@ export default function Console() {
           {section === "models" && (
             <>
               <ServiceNotice
-                title="One model is currently configured"
-                text="The backend uses Groq with GPT-OSS 20B. Additional models and an independent evaluator are not connected yet."
+                title="Three candidate models and one evaluation step"
+                text="Groq hosts GPT-OSS 20B, GPT-OSS 120B, and Qwen 3.8 27B. GPT-OSS 120B also evaluates the collected answers. The API returns a final answer, not a winning model."
               />
               <section className="panel">
                 <PanelTitle
@@ -384,7 +384,11 @@ export default function Console() {
                   <p>
                     Provider: Groq · Model: openai/gpt-oss-20b
                     <br />
-                    The backend selects this model for every query.
+                    One of three candidate models used for each query.
+                    <br />
+                    Other candidates: openai/gpt-oss-120b and qwen/qwen3.8-27b.
+                    <br />
+                    Evaluation: openai/gpt-oss-120b.
                   </p>
                 </div>
                 <div className="panel-footnote">

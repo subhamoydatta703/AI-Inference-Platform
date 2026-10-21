@@ -70,11 +70,11 @@ export function ProductPreview() {
             </div>
             <div className="preview-http-response">
               <Icon name="shield" size={25} />
-              <h4>Model response</h4>
+              <h4>Evaluated response</h4>
               <p>
-                The API returns the model answer and a conversation ID.
+                The API returns a final evaluated answer, its query, and a conversation ID.
               </p>
-              <span>Groq · GPT-OSS 20B</span>
+              <span>Three candidate answers · One final response</span>
             </div>
           </div>
           <div className="preview-pipeline">

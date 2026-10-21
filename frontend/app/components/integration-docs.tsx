@@ -17,10 +17,11 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
       <section className="panel integration-main">
         <div className="integration-intro">
           <span className="eyebrow">BACKEND TO BACKEND</span>
-          <h2>Send a query. Receive a model response.</h2>
+          <h2>Send a query. Receive an evaluated answer.</h2>
           <p>
             Send a query with optional code, language, and a URL. The current
-            orchestrator calls GPT-OSS 20B through Groq and returns its answer.
+            platform collects three model answers, evaluates them against your
+            original query, and returns one final answer. You do not select a model.
           </p>
         </div>
         <div className="availability-notice">
@@ -59,11 +60,13 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <div>
             <span className="step">3</span>
             <div>
-              <h3>Receive the model answer</h3>
+              <h3>Receive the evaluated answer</h3>
               <p>
                 Both examples print the complete JSON response. Read
-                data.response for the Markdown answer and
-                data.query.conversationId for its identifier. Each request starts a new conversation;
+                data.response for the final Markdown answer,
+                data.query for the original query, and data.conversationId for
+                its identifier. Model rankings and user IDs are not part of
+                this response. Each request starts a new conversation;
                 history and follow-up context are not stored yet.
               </p>
             </div>
@@ -179,8 +182,10 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <p>400: invalid request, with validation issues in errors. 401: missing
             or invalid API key, including revoked keys. 500: authentication
             service or query processing failed.</p>
-          <p>Multiple-model execution and independent evaluation are not
-            implemented yet.</p>
+          <p>The backend currently requires all three model calls and evaluation
+            to succeed. A provider failure returns 500 rather than a partial answer.
+            Requests may take longer than a single model call; the examples use
+            a 120-second client timeout, which you can adjust for your deployment.</p>
         </section>
         <section className="panel">
           <span className="tag available">LIVE ENDPOINT</span>

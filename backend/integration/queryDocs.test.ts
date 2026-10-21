@@ -2,18 +2,24 @@ import { describe, expect, mock, test } from "bun:test";
 import { resolve } from "node:path";
 import ts from "typescript";
 import { z } from "zod";
-import { exampleResponse, integrationSnippet } from "../../frontend/app/lib/integration";
+import { integrationSnippet } from "../../frontend/app/lib/integration";
+import type { EvaluationResultFormat } from "../src/utils/types/evaluation/evaluationResult";
 
 const snippet = integrationSnippet("TypeScript");
 const conversationId = "550e8400-e29b-41d4-a716-446655440000";
 const success = {
-  ...exampleResponse,
+  success: true,
+  message: "Query processed successfully",
   data: {
-    ...exampleResponse.data,
-    query: { ...exampleResponse.data.query, conversationId },
+    conversationId,
+    query: {
+      query: "Identify the failure modes in this implementation.",
+      language: "javascript",
+      code: "function first(items) { return items[0].name; }",
+    },
     response: "Check for empty items first.",
   },
-};
+} satisfies { success: true; message: string; data: EvaluationResultFormat };
 
 // Execute the actual copyable example with mocked HTTP and isolated credentials.
 // Reuse the backend's Zod dependency; the frontend only renders source text.
@@ -49,7 +55,7 @@ describe("copyable TypeScript query example", () => {
     const program = ts.createProgram([samplePath], options, host);
     const errors = ts.getPreEmitDiagnostics(program).filter((item) => item.category === ts.DiagnosticCategory.Error);
     expect(errors.map((item) => ts.flattenDiagnosticMessageText(item.messageText, "\n"))).toEqual([]);
-  });
+  }, 20_000);
 
   test("sends the platform key to the backend origin and reads validated output", async () => {
     const { request, log } = await executeExample(Response.json(success));
@@ -60,11 +66,15 @@ describe("copyable TypeScript query example", () => {
     const printed = log.mock.calls[0]?.[0];
     if (typeof printed !== "string") throw new Error("Expected a JSON string");
     expect(JSON.parse(printed)).toEqual(success);
+    expect(JSON.parse(printed).data).not.toHaveProperty("userId");
+    expect(JSON.parse(printed).data.query).not.toHaveProperty("conversationId");
   });
 
   test("rejects malformed success data before accessing nested fields", async () => {
     for (const body of [null, {}, { success: true, data: null }, {
       ...success, data: { ...success.data, response: 123 },
+    }, {
+      ...success, data: { query: { ...success.data.query, conversationId }, response: "Old response shape" },
     }]) {
       await expect(executeExample(Response.json(body))).rejects.toThrow("unexpected response shape");
     }
