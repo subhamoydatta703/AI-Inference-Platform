@@ -21,7 +21,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <h2>Send a query. Receive an evaluated answer.</h2>
           <p>
             Send a query with optional code, language, and a URL. The current
-            platform requests three candidate answers through Groq and OpenRouter,
+            platform coordinates three candidate answers,
             evaluates them against your original query, and returns the best
             acceptable answer unchanged. You do not select a model.
           </p>
@@ -33,7 +33,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             <p>
               Send your platform API key as an Authorization Bearer token.
               The backend identifies your account from the key; no user ID
-              belongs in the request body. The platform also needs Groq and OpenRouter credentials configured.
+              belongs in the request body.
             </p>
           </div>
         </div>
@@ -172,9 +172,8 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <h3>Keep API keys in your backend</h3>
           <p>
             Your application uses INFERENCE_API_KEY for platform requests.
-            GROQ_API_KEY and OPENROUTER_API_KEY are separate provider credentials
-            used only by the platform&apos;s Express backend. Never put these secrets in browser
-            code or commit it to your repository.
+            Keep this credential in your server environment. Never expose it in
+            browser code or commit it to your repository.
           </p>
           <code>INFERENCE_BASE_URL</code>
           <code>INFERENCE_API_KEY</code>
@@ -182,8 +181,12 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
         <section className="panel">
           <h3>Error responses</h3>
           <p>400: invalid request, with validation issues in errors. 401: missing
-            or invalid API key, including revoked keys. 500: authentication
+            or invalid API key, including revoked keys. 429: request limit exceeded.
+            500: authentication
             service or query processing failed.</p>
+          <p>Each account can make 10 requests per minute and 100 per day, shared
+            across its keys and authenticated routes. On HTTP 429, wait for the
+            number of seconds in the Retry-After header before retrying.</p>
           <p>Candidate calls run sequentially, followed by evaluation. Failed or
             blank candidates are passed to the evaluator for exclusion; an evaluation
             failure returns 500. If no candidate is acceptable, data.response contains

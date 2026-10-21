@@ -8,14 +8,15 @@ import { useAuthAvailable } from "./auth-availability";
 import { Brand, Icon, type IconName } from "./icons";
 import { IntegrationDocs } from "./integration-docs";
 import { orchestrationStages } from "../lib/integration";
-import { candidateModels, evaluationModel, maxApiKeys } from "../lib/platform";
+import { maxApiKeys } from "../lib/platform";
+import { EvaluationArchitecture, ModelNames, ModelRoster } from "./query-architecture";
 
 const sections = [
   {
     id: "overview",
     title: "Overview",
     icon: "grid",
-    description: "Your account, integration, and platform availability.",
+    description: "Your workspace for application access and evaluated intelligence.",
   },
   {
     id: "keys",
@@ -29,7 +30,7 @@ const sections = [
     title: "Platform models",
     icon: "cube",
     description:
-      "The models behind the platform. Routing is handled automatically.",
+      "Three perspectives, managed orchestration, and a dedicated evaluation layer.",
   },
   {
     id: "history",
@@ -168,7 +169,7 @@ export default function Console() {
           </span>
           <span>
             <strong>Developer console</strong>
-            <small>Orchestration & evaluation</small>
+              <small>Developer workspace</small>
           </span>
           <Icon name="down" size={14} />
         </button>
@@ -287,6 +288,10 @@ export default function Console() {
           </div>
           {section === "overview" && (
             <>
+              <section className="workspace-welcome">
+                <div><span className="eyebrow">BUILD WITH PERSPECTIVE</span><h2>Your next integration starts here.</h2><p>Create a key, connect your application, and let Inference coordinate the answers.</p><button className="button primary" onClick={() => go("docs")}>Explore the quickstart <Icon name="arrow" size={16} /></button></div>
+                <ol className="workspace-steps"><li><span>01</span><div><strong>Connect your account</strong><p>A single place to manage application access.</p></div></li><li><span>02</span><div><strong>Create an API key</strong><p>Keep your key in your server environment.</p></div></li><li><span>03</span><div><strong>Make your first request</strong><p>Start with a Python or TypeScript example.</p></div></li></ol>
+              </section>
               <div className="capability-grid">
                 <Capability
                   icon="shield"
@@ -295,14 +300,14 @@ export default function Console() {
                   available={authAvailable}
                   text={
                     authAvailable
-                      ? "Sign in with Clerk and load your backend profile."
-                      : "Configure Clerk to connect your account."
+                      ? "Manage your signed-in identity and platform profile."
+                      : "Account sign-in is not configured for this workspace."
                   }
                 />
                 <Capability
                   icon="cube"
                   title="Query inference"
-                  status="Implemented"
+                  status="Available"
                   available
                   text="Three model answers are evaluated into one final response, authenticated with your platform key."
                 />
@@ -316,16 +321,16 @@ export default function Console() {
               </div>
               <section className="panel platform-flow">
                 <PanelTitle
-                  title="How your query becomes an insight"
-                  subtitle="The platform validates your request, gathers model answers, and evaluates them."
+                  title="From query to considered answer"
+                  subtitle="A managed workflow for generation, review, and selection."
                 />
                 <Pipeline />
                 <div className="panel-footnote">
                   <Icon name="clock" size={16} />
-                  Provider credentials and quota must cover all three candidate
-                  model calls and the evaluation call.
+                  Account allowance: 10 requests per minute and 100 per day, shared across authenticated API routes.
                 </div>
               </section>
+              <section className="panel ensemble-panel"><PanelTitle title="Three perspectives. One workflow." subtitle="Each model contributes a candidate response to the same request." action={<button className="text-button" onClick={() => go("models")}>Explore architecture <Icon name="arrow" size={15} /></button>} /><ModelRoster /></section>
               <div className="overview-entry-grid">
                 <section className="panel overview-entry">
                   <Icon name="key" size={25} />
@@ -369,32 +374,20 @@ export default function Console() {
           {section === "models" && (
             <>
               <ServiceNotice
-                title="Three candidate models and one evaluation step"
-                text="Groq hosts GPT-OSS 20B and GPT-OSS 120B. OpenRouter supplies Nemotron 3 Ultra. GPT-OSS 120B selects the best acceptable candidate answer and returns its text unchanged. Model rankings stay internal."
+                title="Three perspectives, one evaluated answer"
+                text="Every query follows the same managed workflow. Three models respond to your context; a separate evaluation layer reviews the candidates and selects the best acceptable answer."
               />
               <section className="panel">
                 <PanelTitle
-                  title="Models used by the platform"
-                  subtitle="Informational only. Users do not choose a model."
+                  title="The model ensemble"
+                  subtitle="Coordinated automatically for every query."
                 />
-                {candidateModels.map((model) => <div className="empty-state" key={model.id}>
-                  <span className="empty-icon">
-                    <Icon name="cube" size={27} />
-                  </span>
-                  <h2>{model.name}</h2>
-                  <p>
-                    Provider: {model.provider} · Model: <code className="platform-model-id">{model.id}</code>
-                    <br />
-                    One of three candidate models used for each query.
-                    <br />
-                  </p>
-                </div>)}
+                <ModelRoster />
                 <div className="panel-footnote">
-                  <Icon name="shield" size={16} />This reflects the current backend
-                  configuration. Evaluation uses {evaluationModel.id} through {evaluationModel.provider}.
-                  Provider availability depends on Groq and OpenRouter credentials and quota.
+                  <Icon name="shield" size={16} />Your application sends one request. Model coordination and answer selection are handled automatically.
                 </div>
               </section>
+              <EvaluationArchitecture />
               <section className="panel platform-flow">
                 <PanelTitle title="Automatic orchestration" />
                 <Pipeline />
@@ -410,7 +403,7 @@ export default function Console() {
               <section className="panel">
                 <PanelTitle
                   title="Query history"
-                  subtitle="Persistent conversation history is not implemented yet."
+                  subtitle="Request history and usage reporting are coming in a future release."
                 />
                 <div className="empty-state">
                   <span className="empty-icon">
@@ -435,7 +428,7 @@ export default function Console() {
             <section className="panel settings-panel">
               <PanelTitle
                 title="Your platform profile"
-                subtitle="Real account data from the backend, authenticated with Clerk."
+                subtitle="Manage your identity and check your platform connection."
               />
               <div className="settings-content">
                 <AccountSettings />
@@ -533,6 +526,7 @@ export function Pipeline({ compact = false }: { compact?: boolean }) {
           <span className="pipeline-step">0{index + 1}</span>
           <h3>{stage.title}</h3>
           <p>{stage.description}</p>
+          {stage.icon === "cube" && <ModelNames />}
           {index < orchestrationStages.length - 1 && (
             <Icon name="arrow" size={17} />
           )}

@@ -28,6 +28,11 @@ test("landing explains the API integration and leads to documentation", async ({
     page.getByText("No. The orchestration layer", { exact: false }),
   ).toBeVisible();
   await expectFitsViewport(page);
+  await expect(page.locator(".query-flow-panel")).not.toContainText(/Groq|OpenRouter|conversation ID/);
+  for (const name of ["GPT-OSS 20B", "GPT-OSS 120B", "Nemotron 3 Ultra"]) {
+    await expect(page.locator(".query-flow-panel")).toContainText(name);
+  }
+  await expect(page.locator(".evaluation-architecture")).not.toContainText(/GPT-OSS|Nemotron/);
   const preview = await page.locator(".product-preview-frame").boundingBox();
   const stage = await page.locator(".hero-product-stage").boundingBox();
   expect(preview).not.toBeNull();
@@ -67,7 +72,7 @@ test("landing explains the API integration and leads to documentation", async ({
 
 test("API keys ignore old demo records and require sign-in for creation", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.addInitScript(() =>
     localStorage.setItem(
       "inference-preview-keys-v1",
@@ -93,6 +98,8 @@ test("API keys ignore old demo records and require sign-in for creation", async 
   await expect(
     page.getByText("Fake production key", { exact: true }),
   ).toHaveCount(0);
+  await expectFitsViewport(page);
+  await page.screenshot({ path: `test-results/keys-${testInfo.project.name}.png`, fullPage: true });
   await page
     .getByRole("main")
     .getByRole("button", { name: "Read integration docs", exact: true })
@@ -142,7 +149,7 @@ test("docs contain only Python and TypeScript and copy the live backend contract
     }),
   ).toBeVisible();
   await expect(page.getByText("No acceptable candidate answer is available.", { exact: true })).toBeVisible();
-  await expect(page.getByText("GROQ_API_KEY and OPENROUTER_API_KEY", { exact: false })).toBeVisible();
+  await expect(page.getByText("On HTTP 429, wait for the", { exact: false })).toBeVisible();
   await expectFitsViewport(page);
   await page.screenshot({
     path: `test-results/docs-${testInfo.project.name}.png`,
@@ -157,12 +164,14 @@ test("models reflect the backend and history stays unavailable with working acco
   await expect(
     page.getByRole("heading", { name: "GPT-OSS 20B", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Provider: Groq · Model: openai/gpt-oss-20b", { exact: false })).toBeVisible();
   await expect(page.getByRole("heading", { name: "GPT-OSS 120B", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Nemotron 3 Ultra", exact: true })).toBeVisible();
-  await expect(page.getByText("Provider: OpenRouter · Model: nvidia/nemotron-3-ultra-550b-a55b:free", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Every answer earns its place.", exact: true })).toBeVisible();
+  await expect(page.getByRole("main")).not.toContainText(/Groq|OpenRouter|conversation ID/);
+  await expect(page.locator(".evaluation-architecture")).not.toContainText(/GPT-OSS|Nemotron/);
   await expect(page.getByText("qwen/qwen3.8-27b", { exact: false })).toHaveCount(0);
   await expectFitsViewport(page);
+  await page.screenshot({ path: `test-results/models-${testInfo.project.name}.png`, fullPage: true });
   await expect(page.getByRole("combobox")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /Open playground|Select model/ }),
@@ -183,6 +192,8 @@ test("models reflect the backend and history stays unavailable with working acco
   await expect(
     page.getByText("Account connection is not configured", { exact: true }),
   ).toBeVisible();
+  await expectFitsViewport(page);
+  await page.screenshot({ path: `test-results/account-${testInfo.project.name}.png`, fullPage: true, animations: "disabled" });
   await page.goto("/console#overview");
   await expect(
     page.getByRole("heading", { name: "Overview", level: 1 }),

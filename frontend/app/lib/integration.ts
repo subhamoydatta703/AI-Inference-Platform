@@ -152,8 +152,9 @@ console.log(JSON.stringify(result, null, 2));`;
 }
 
 export const orchestrationStages = [
-  { icon: "book", title: "Query & context", description: "Your question, with optional language, code, and a URL." },
-  { icon: "shield", title: "Validation", description: "The backend verifies your API key and validates your query." },
-  { icon: "cube", title: "Model answers", description: "Groq and OpenRouter supply three candidate answers for evaluation." },
-  { icon: "bolt", title: "Evaluated answer", description: "The evaluator selects an acceptable answer and returns it with the query and conversation ID." },
+  { icon: "book", title: "Query & context", description: "Start with a question. Add code, a language, or reference context." },
+  { icon: "terminal", title: "Orchestration", description: "One request coordinates three models through a managed workflow." },
+  { icon: "cube", title: "Model responses", description: "Three distinct perspectives address the same question and context." },
+  { icon: "shield", title: "Evaluation", description: "Candidate answers are assessed for correctness, relevance, and completeness." },
+  { icon: "bolt", title: "Final answer", description: "The strongest acceptable response is selected and delivered to your application." },
 ] as const;

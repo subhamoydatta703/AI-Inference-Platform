@@ -13,10 +13,9 @@ export function ProductStage({ children }: { children: ReactNode }) {
 
     function fitPreview() {
       if (!stage || !frame) return;
-      // Leave space for the projected corners of the rotated 1030px layout.
-      const scale = Math.min(1, Math.max(0.1, (stage.clientWidth - 32) / 1200));
+      const scale = Math.min(1, Math.max(0.1, (stage.clientWidth - 32) / 1030));
       stage.style.setProperty("--preview-scale", String(scale));
-      stage.style.height = `${Math.ceil((frame.offsetHeight + frame.offsetWidth * 0.15) * scale + 90)}px`;
+      stage.style.height = `${Math.ceil(frame.offsetHeight * scale + 40)}px`;
     }
 
     const observer = new ResizeObserver(fitPreview);

@@ -72,7 +72,7 @@ export function ProductPreview() {
               <Icon name="shield" size={25} />
               <h4>Evaluated response</h4>
               <p>
-                The API returns a final evaluated answer, its query, and a conversation ID.
+                One selected answer, reviewed for correctness, relevance, and completeness.
               </p>
               <span>Three candidate answers · One final response</span>
             </div>

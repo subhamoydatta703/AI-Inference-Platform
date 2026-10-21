@@ -133,8 +133,8 @@ function KeyPanel({ keys = [], userId, action = null, copiedId = null, error = "
     <div className="availability-notice">
       <Icon name="clock" size={19} />
       <div>
-        <strong>API-key creation and revocation are available</strong>
-        <p>Up to {maxApiKeys} keys per account. Your stored keys are loaded from the backend. Revoking a key deletes it and frees a slot. Copy new keys before leaving this page; existing secrets cannot be retrieved.</p>
+        <strong>Secure access for your application</strong>
+        <p>Up to {maxApiKeys} keys per account. Copy a new key before leaving this page; its secret is shown only during this visit. Revoke keys you no longer need to free a slot.</p>
       </div>
     </div>
     <section className="panel api-keys-panel" aria-busy={busy}>
@@ -170,7 +170,7 @@ function KeyPanel({ keys = [], userId, action = null, copiedId = null, error = "
       </ul> : <div className="empty-state key-empty">
         <span className="empty-icon"><Icon name="key" size={27} /></span>
         <h2>{action === "load" ? "Loading API keys…" : synced ? "No API keys yet" : "No key data available"}</h2>
-        <p id="keys-availability">{create ? synced ? "Create an API key to connect your backend." : "Connecting to your stored API keys." : "Sign in to create and revoke application API keys."}</p>
+        <p>{create ? synced ? "Create an API key to connect your backend." : "Connecting to your stored API keys." : "Sign in to create and revoke application API keys."}</p>
         <button className="button" onClick={() => { window.location.hash = "docs"; }}>Read integration docs <Icon name="arrow" size={16} /></button>
       </div>}
       <p className="muted api-key-message" id="keys-availability">Use your platform key as an Authorization Bearer token for query requests from your backend. Copy new keys before leaving this page; their secrets cannot be retrieved later. Revoked keys stop authenticating requests.</p>
