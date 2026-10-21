@@ -1,41 +1,43 @@
-﻿# Frontend verification
+# Frontend design verification
 
-Final result: passed for the API-focused developer console.
+final result: passed
 
-## Product alignment
+## Scope and visual source
 
-The frontend now follows the agreed product: query plus optional code/documentation context -> automatic orchestration across models -> independent evaluator -> final insight. Users do not select models. API keys are the intended mechanism for backend-to-platform integration. Documentation has exactly Python and TypeScript language tabs.
+This is an intentional redesign of the existing Inference frontend, not a clone of an external mockup. The existing charcoal/indigo theme, Geist typography, Lucide icons, account flow, and API integration are the starting design system. The pre-change landing and overview screenshots were inspected before implementation. The first redesign pass is the source visual baseline for the final polish comparisons below.
 
-The original dark Figmaland visual direction is retained. The user-approved Figma source was a flattened intro thumbnail, so this remains an original responsive adaptation rather than an exact conversion.
+The brief calls for a professional SaaS landing page and developer console, three named candidate models, clear orchestration and evaluation architecture, no provider details or conversation identifiers in product-facing query flows, and no named evaluator model. Technical response fields remain in the integration reference because they are part of the backend contract.
 
-## Removed
+## Evidence
 
-- Per-model playground, model picker, temperature control, sample model names and pricing.
-- Fabricated request/usage/latency metrics, mock request history, sample CSV export.
-- Browser-generated API keys and simulated successful responses.
-- The mock-data module and sample-export route.
+- Source first-pass desktop: `design-qa/baseline/docs-desktop.png` (1440 × 2303).
+- Final desktop: `test-results/docs-desktop.png` (1440 × 2339).
+- Combined desktop comparison: `design-qa/docs-desktop-comparison.png`; both full captures scaled to 720px wide for the board.
+- Source first-pass mobile: `design-qa/baseline/account-mobile.png` (1170 × 1992).
+- Final mobile: `test-results/account-mobile.png` (1170 × 1992).
+- Combined mobile comparison: `design-qa/account-mobile-comparison.png`; both normalized from device scale factor 3 to 390 CSS pixels wide.
+- Additional rendered screenshots: landing, overview, models, API keys, and docs at both desktop and mobile widths in `test-results/`.
+- Browser viewports: desktop 1440 × 1000 CSS px at density 1; mobile 390 × 664 CSS px at density 3. Full-page heights vary by route.
+- State: dark theme; account authentication disabled in the browser suite. Documentation captures show the TypeScript tab and copied-code toast. Account captures follow navigation from the sidebar.
 
-The query workspace, its input state, navigation, CTAs, and associated styling have been removed. The site and hero illustration now focus on backend HTTP integration and API keys. Legacy browser-local preview key records are ignored without modifying local storage. Retired workspace/playground hashes open integration docs; usage/settings hashes open history/account.
+## Comparison and fixes
 
-## Checks
+1. [P2, resolved] Response-shape explanatory text touched the documentation panel edge. The final stylesheet gives this paragraph 16px vertical and 24px horizontal padding, consistent with the rest of the contract reference. The combined desktop comparison shows the corrected inset and wrapping without changing the code block.
+2. [Evidence issue, resolved] The initial mobile account screenshot caught the sidebar halfway through its closing transition. The final capture fast-forwards animations and shows the completed closed state, with the account heading, profile panel, and navigation button visible. This was a capture timing issue; the app keeps its normal navigation transition.
+3. Query flow and model screens now include GPT-OSS 20B, GPT-OSS 120B, and Nemotron 3 Ultra. Automated checks verify that provider names and conversation IDs do not appear in the product flow, and that the evaluation layer does not name a model.
 
-- Next.js production build and TypeScript validation: passed.
-- ESLint: passed.
-- 10 desktop/mobile Chromium checks: passed after workspace removal.
-- 4 direct authenticated profile-request tests: passed.
-- 2 real-Clerk browser checks: passed (header sign-in/sign-up and account sign-in).
-- Python integration example: parsed successfully without execution.
-- TypeScript integration example: syntax validation passed.
-- Reviewed updated screenshots of the API-focused landing page and mobile overview, plus integration documentation. Code examples intentionally scroll within their containers; the UI explains this and copying includes the entire example.
+Full-view and focused comparisons were opened and reviewed. The docs comparison includes the response-shape region, and the account comparison covers the whole mobile screen. No actionable P0/P1/P2 visual issues remain in the inspected states.
 
-Browser checks cover landing-to-docs navigation, ignored legacy mock keys, disabled real-key creation, Python/TypeScript code copying, read-only model information, unavailable history, account navigation, retired workspace/playground links, absence of query forms, page errors on the landing journey, and viewport containment at 1440px/390px.
+## Functional verification
 
-Screenshots and generated snippet syntax artifacts are in the ignored test-results directory. General browser tests use a separate .next-tests directory to preserve the user's running dev server.
+- Production build: passed.
+- ESLint and TypeScript: passed.
+- API unit tests: 11 passed.
+- Desktop/mobile browser tests: 10 passed after final polish.
+- Checked landing-to-docs conversion, FAQ expansion, desktop/mobile navigation, legacy links, disabled signed-out key creation, ignored old demo credentials, language tabs, clipboard content, models, account, unavailable history, and viewport containment.
+- No page errors were observed on the automated landing-to-docs journey.
+- Existing local development server at `http://localhost:3000` returns the refreshed landing page.
 
-## Service boundaries
+## Remaining test gaps
 
-Live account integration uses the configured Clerk publishable key in the browser and an authenticated request directly to the existing Express GET /api/v1/users/me endpoint. No frontend Clerk secret is needed for this flow. A complete sign-in and database synchronization have not been performed with a user's credentials.
-
-The backend currently has no orchestration, evaluator, API-key lifecycle, configured-model roster, or usage/history endpoints. Those screens report unavailable data, and key creation is disabled. Queries and optional code/documentation context belong in requests sent by an integrating backend, not in a browser workspace.
-
-POST /api/v1/queries and the JSON response in the Python/TypeScript examples are explicitly a proposed contract, including in copied code. No new backend endpoint is claimed or fabricated. The optional existing Next.js /api/me proxy remains separate from the browser's direct profile request.
+Live sign-in, authenticated key creation/revocation, provider inference, and real HTTP 429 recovery require configured services and an interactive account; they were not exercised by this visual refresh. Existing API integrations remain connected. History and usage metrics remain explicitly unavailable rather than showing fabricated activity.

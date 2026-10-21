@@ -1,5 +1,15 @@
 # Frontend design and integration
 
+## Current SaaS refresh
+
+The frontend now uses a consistent charcoal and indigo SaaS presentation across the public site and developer console. `app/saas.css` contains the presentation refinements on top of the established base styles. The landing page uses a split hero, a five-stage query workflow, the three named model cards, a separate evaluation section, developer integration cards, a level console preview, FAQ, and clear console/documentation actions. The console adds a getting-started panel and shares the model and evaluation components with the public site.
+
+Product-facing flows name GPT-OSS 20B, GPT-OSS 120B, and Nemotron 3 Ultra without exposing provider names or conversation identifiers. The evaluation section describes validation, assessment, and selection without naming the evaluator model. Technical identifiers remain in the API reference and copyable integration examples. Request-limit documentation reflects 10 requests per minute and 100 per day across authenticated routes.
+
+The existing account and key-management integrations remain connected, including loading, errors, secret visibility, copying, and revocation. No activity figures, customer logos, live model-health claims, or generated answers are invented. The refresh builds on the existing code and visual system; the older Figma reference below records the original design history rather than an exact target for this redesign. See `design-qa.md` for final screenshots, comparisons, checks, and test limitations.
+
+## Original design context
+
 The public landing page is an adaptation of the Figmaland Startup Landing Page Dark reference supplied by the user:
 https://www.figma.com/design/tiDteXEbShXCo2RizV6Q17/Figma-startup-landing-page-dark--Community-?node-id=0-3564
 
