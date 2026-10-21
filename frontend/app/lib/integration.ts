@@ -10,9 +10,9 @@ export const exampleResponse = {
   success: true,
   message: "Query processed successfully",
   data: {
-    userId: "<authenticated-user-id>",
-    query: { conversationId: "<server-generated-uuid>", ...exampleQuery },
-    response: "<model answer>",
+    conversationId: "<server-generated-uuid>",
+    query: { ...exampleQuery },
+    response: "<final evaluated answer>",
   },
 };
 
@@ -60,6 +60,8 @@ try:
         result = json.load(response)
     if not result.get("success"):
         raise RuntimeError(result.get("message", "Query failed"))
+    # data.response is the final evaluated answer.
+    # data.conversationId identifies this request's conversation.
     # Print the complete API response as formatted JSON.
     print(json.dumps(result, indent=2, ensure_ascii=False))
 except HTTPError as error:
@@ -98,8 +100,8 @@ const successSchema = z.object({
   success: z.literal(true),
   message: z.string(),
   data: z.object({
-    userId: z.string(),
-    query: querySchema.extend({ conversationId: z.uuid() }),
+    conversationId: z.uuid(),
+    query: querySchema,
     response: z.string(),
   }),
 });
@@ -143,6 +145,8 @@ if (!parsed.success) {
   throw new Error("Platform returned an unexpected response shape");
 }
 const result: QueryResponse = parsed.data;
+// result.data.response is the final evaluated answer.
+// result.data.conversationId identifies this request's conversation.
 // Print the complete validated API response as formatted JSON.
 console.log(JSON.stringify(result, null, 2));`;
 }
@@ -150,6 +154,6 @@ console.log(JSON.stringify(result, null, 2));`;
 export const orchestrationStages = [
   { icon: "book", title: "Query & context", description: "Your question, with optional language, code, and a URL." },
   { icon: "shield", title: "Validation", description: "The backend verifies your API key and validates your query." },
-  { icon: "cube", title: "Groq inference", description: "The orchestrator sends your query to GPT-OSS 20B." },
-  { icon: "bolt", title: "Model response", description: "Receive the answer with a server-generated conversation ID." },
+  { icon: "cube", title: "Model answers", description: "Three models generate candidate answers for evaluation." },
+  { icon: "bolt", title: "Evaluated answer", description: "Receive one final answer with its query and conversation ID." },
 ] as const;

@@ -47,7 +47,7 @@ export default function LandingPage() {
           <p>
             One HTTP API for queries and model responses.
             <br className="desktop-only" /> Send queries and context from your
-            backend. Receive answers from GPT-OSS 20B.
+            backend. Receive one evaluated answer.
           </p>
           <div className="hero-actions">
             <Link href="/console#docs" className="button primary large">
@@ -60,7 +60,7 @@ export default function LandingPage() {
           <div className="hero-note">
             <Icon name="terminal" size={13} />
             Query inference, account access, and API-key management are live.
-            Multi-model evaluation is in development.
+            Three model answers are combined through evaluation.
           </div>
           <ProductStage>
             <ProductPreview />
@@ -75,9 +75,9 @@ export default function LandingPage() {
             <span className="eyebrow">FROM QUESTION TO EVALUATED INSIGHT</span>
             <h2>More than a model response.</h2>
             <p>
-              Today, the orchestrator runs your query through Groq.
-              <br className="desktop-only" /> Multiple models and an independent
-              evaluator are the next steps.
+              The orchestrator gathers three candidate answers through Groq.
+              <br className="desktop-only" /> An evaluation step checks them
+              against your query and produces one final answer.
             </p>
           </div>
           <div className="platform-feature-grid">
@@ -119,12 +119,12 @@ export default function LandingPage() {
                 {
                   icon: "cube",
                   title: "Let orchestration handle the models",
-                  text: "The backend currently uses GPT-OSS 20B through Groq. The user does not select a model. More model integrations are planned.",
+                  text: "The backend gathers answers from GPT-OSS 20B, GPT-OSS 120B, and Qwen 3.8 27B through Groq. You do not select a model.",
                 },
                 {
                   icon: "shield",
-                  title: "Independent evaluation is next",
-                  text: "A separate evaluator is planned to check multiple model answers. The current API returns a single model response.",
+                  title: "Receive one evaluated answer",
+                  text: "An evaluation step reviews the candidates against your original query and synthesizes a final answer. Model rankings are not part of the response.",
                 },
               ].map((feature) => (
                 <div className="feature-list-item" key={feature.title}>
@@ -205,8 +205,8 @@ export default function LandingPage() {
             </article>
           </div>
           <p className="section-footnote">
-            Queries currently run on GPT-OSS 20B through Groq. Independent
-            evaluation and additional models are in development.
+            Each query runs through three candidate models and an evaluation
+            step. Your application receives one final response.
           </p>
         </section>
         <section className="landing-section workflow-section">
@@ -259,7 +259,7 @@ export default function LandingPage() {
             {[
               {
                 q: "Do I need to choose a model?",
-                a: "No. The orchestration layer currently sends each query to GPT-OSS 20B through Groq. Additional models and a separate evaluator are planned; users do not select models.",
+                a: "No. The orchestration layer sends each query to three models and evaluates their answers. Your application receives the final answer, original query, and conversation ID without a model ranking.",
               },
               {
                 q: "Can I include source code or documentation?",
@@ -271,7 +271,7 @@ export default function LandingPage() {
               },
               {
                 q: "What is available right now?",
-                a: "Clerk sign-in, account profiles, API-key management, Groq query inference, and Python and TypeScript integration docs are available. Queries require backend Groq credentials. Multiple-model evaluation and persistent usage history are not implemented yet.",
+                a: "Clerk sign-in, account profiles, API-key management, three-model query inference and evaluation, and Python and TypeScript integration docs are implemented. Queries require backend provider credentials and quota. Persistent usage history is not implemented yet.",
               },
             ].map((item) => (
               <details key={item.q}>
@@ -327,7 +327,7 @@ export default function LandingPage() {
             <p>
               Account access is available.
               <br />
-              Query services are coming next.
+              Query inference and evaluation are implemented.
             </p>
           </div>
         </div>

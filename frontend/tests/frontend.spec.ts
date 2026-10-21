@@ -129,6 +129,9 @@ test("docs contain only Python and TypeScript and copy the live backend contract
   expect(code).toContain("let body: unknown");
   expect(code).toContain("successSchema.safeParse(body)");
   expect(code).toContain("type QueryResponse = z.infer");
+  expect(code).toContain("result.data.conversationId");
+  expect(code).not.toContain("data.query.conversationId");
+  expect(code).not.toContain("userId: z.string()");
   expect(code).toContain("language:");
   expect(code).not.toContain("context:");
   expect(code).toContain("Authorization");
