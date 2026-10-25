@@ -37,11 +37,13 @@ export const queryController = async(req: AuthenticatedRequest, res: Response)=>
             code: queryData?.code,
         }
 
+
+        // query concurrency limiter
+        const { queryConcurrencyLimiter } = await import('../../config/concurrency/concurrencyConfig');
         // Load provider configuration only for a valid authenticated query.
         const { OrchestratorService } = await import('../../services/orchestrator/orchestratorService');
         const orchestratorService = new OrchestratorService()
-        const orchResponse = await orchestratorService.run(userId, query);
-
+        const orchResponse = await queryConcurrencyLimiter(() => orchestratorService.run(userId, query));
         if (!orchResponse) {
             return res.status(400).json({
                 success: false,

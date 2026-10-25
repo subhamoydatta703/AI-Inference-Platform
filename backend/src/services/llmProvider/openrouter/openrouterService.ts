@@ -66,11 +66,7 @@ for await (const chunk of stream) {
             
         } catch (error) {
             console.error("Error in OpenRouterService:", error);
-            return {
-                userId: userId,
-                query: userQuery,
-                error: error as Error,
-            };
+            throw error;
         } 
 
 

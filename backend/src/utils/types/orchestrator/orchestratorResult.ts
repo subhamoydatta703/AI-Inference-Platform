@@ -4,7 +4,7 @@ import { type llmResponseFormat } from "../llm/llmResponse";
 export interface OrchestratorResultFormat{
  result: Array<{
     model: string,
-    response: llmResponseFormat
+    response: llmResponseFormat 
  }>
 }
 

@@ -1,6 +1,9 @@
 # dependencies (bun install)
 node_modules
 
+# Local implementation plans and system-design notes
+/docs/
+
 # output
 out
 dist
