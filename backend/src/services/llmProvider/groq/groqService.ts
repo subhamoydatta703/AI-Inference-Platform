@@ -94,17 +94,7 @@ export class GroqService {
             }
         } catch (error) {
             console.error("Error in GroqService:", error);
-            return{
-               conversationId: query.conversationId!,
-               query: {
-                   query: query.query,
-                   language: query.language,
-                   code: query.code,
-                   url: query.url,
-
-               },
-               error: error as Error,
-            }
+            throw error;
         }
     }
 }
