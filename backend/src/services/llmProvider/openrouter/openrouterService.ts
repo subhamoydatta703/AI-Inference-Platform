@@ -10,14 +10,17 @@ import { SYSTEM_PROMPT } from '../instructions/llmInstruction';
 
 export class OpenRouterService {
     private readonly client;
+    private readonly TIMEOUT_MS = 10000;
 
     constructor() {
         this.client = openRouter;
+
     }
 
     // query
     async generateResponse(userId:string, userQuery: QueryFormat, model: string): Promise<llmResponseFormat> {   
-        try {
+        const signal = AbortSignal.timeout(this.TIMEOUT_MS);
+      try {
             const stream = await this.client.chat.send({
   chatRequest: {
     model: model,
@@ -32,8 +35,9 @@ export class OpenRouterService {
       },
     ],
     stream: true,
-  },
-});
+  }
+}, {signal});
+
 if (!(stream instanceof ReadableStream)) {
   return {
     userId: userId,

@@ -1,4 +1,4 @@
-import type { Message } from "../../utils/types/message";
+
 import type { EvaluationResultFormat } from "../../utils/types/evaluation/evaluationResult";
 import type { OrchestratorResultFormat } from "../../utils/types/orchestrator/orchestratorResult";
 import type { QueryFormat } from "../../utils/types/query/queryFormat";
@@ -9,128 +9,95 @@ import { OpenRouterService } from "../llmProvider/openrouter/openrouterService";
 
 
 export class OrchestratorService {
-    
-    private conversationId: string;
-    private groqService: GroqService;
-    private openRouterService: OpenRouterService;
-    // private toolPicker: ToolPicker;
-    
 
-    constructor(){
-        this.groqService = new GroqService();
-        this.openRouterService = new OpenRouterService();
-        this.conversationId = `${crypto.randomUUID()}`
-        
-        
-    }
-    
-    async run(userId:string, userQuery:QueryFormat, conversationId=this.conversationId ):Promise<EvaluationResultFormat>{
+  private conversationId: string;
+  private groqService: GroqService;
+  private openRouterService: OpenRouterService;
+  
 
-        try {
-            
-                     const query: QueryFormat = {
-                        conversationId: conversationId,
-                        query: userQuery?.query,
-                        url: userQuery?.url,
-                        language: userQuery?.language,
-                        code: userQuery?.code,
-                    }
 
-                    // run all three models in parallel and wait for all to finish
-                  const [result1, result2, result3] = await Promise.allSettled([
-                    this.groqService.generateResponse(userId, query, "openai/gpt-oss-20b"),
-                    this.groqService.generateResponse(userId, query, "openai/gpt-oss-120b"),
-                    this.openRouterService.generateResponse(userId, query, "nvidia/nemotron-3-ultra-550b-a55b:free")
-                  ])
+  constructor() {
+    this.groqService = new GroqService();
+    this.openRouterService = new OpenRouterService();
+    this.conversationId = `${crypto.randomUUID()}`
 
-                //   let flag = false;
-                //   if(((result1.status==="fulfilled") && (result2.status==="fulfilled") && (result3.status==="fulfilled"))){
-                //     return
-                //     flag = true;
-                //   }
-                //   else if((result1.status==="fulfilled") && (result2.status==="fulfilled")){
-                //     flag = true;
-                //   }
-                //   else if((result1.status==="fulfilled") && (result3.status==="fulfilled")){
-                //     flag = true;
-                //   }
-                //   else if((result2.status==="fulfilled") && (result3.status==="fulfilled")){
-                //     flag = true;
-                //   }
+
+  }
+
+  async run(userId: string, userQuery: QueryFormat, conversationId = this.conversationId): Promise<EvaluationResultFormat> {
+
+    try {
+
+      const query: QueryFormat = {
+        conversationId: conversationId,
+        query: userQuery?.query,
+        url: userQuery?.url,
+        language: userQuery?.language,
+        code: userQuery?.code,
+      }
+
+      // run all three models in parallel and wait for all to finish
+      const [result1, result2, result3] = await Promise.allSettled([
+        this.groqService.generateResponse(userId, query, "openai/gpt-oss-20b"),
+        this.groqService.generateResponse(userId, query, "openai/gpt-oss-120b"),
+        this.openRouterService.generateResponse(userId, query, "nvidia/nemotron-3-ultra-550b-a55b:free")
+      ])
 
 
 
+      const orchResult: OrchestratorResultFormat = {
+        result: []
+      }
 
+      if (result1.status === "fulfilled") {
+        orchResult.result.push({ model: "openai/gpt-oss-20b", response: result1.value })
+      }
+      if (result2.status === "fulfilled") {
+        orchResult.result.push({ model: "openai/gpt-oss-120b", response: result2.value })
+      }
+      if (result3.status === "fulfilled") {
+        orchResult.result.push({ model: "nvidia/nemotron-3-ultra-550b-a55b:free", response: result3.value })
+      }
 
-                //  const response1 =  result1.status === "fulfilled" ? result1.value : {
-                //     userId: userId,
-                //     query: query,
-                //     error: result1.reason
-                //  }
-                //  const response2 =  result2.status === "fulfilled" ? result2.value : {
-                //     userId: userId,
-                //     query: query,
-                //     error: result2.reason
-                //  }
-                //  const response3 =  result3.status === "fulfilled" ? result3.value : {
-                //     userId: userId,
-                //     query: query,
-                //     error: result3.reason
-                //  }
-
-                  const orchResult: OrchestratorResultFormat = {
-                    result:[]
-                  }
-
-                  if(result1.status === "fulfilled"){
-                    orchResult.result.push({model: "openai/gpt-oss-20b", response: result1.value})
-                  }
-                  if(result2.status === "fulfilled"){
-                    orchResult.result.push({model: "openai/gpt-oss-120b", response: result2.value})
-                  }
-                  if(result3.status === "fulfilled"){
-                    orchResult.result.push({model: "nvidia/nemotron-3-ultra-550b-a55b:free", response: result3.value})
-                  }
-
-                  if(orchResult.result.length === 0){
-                    return {
-                        conversationId: conversationId,
-                        query: {
-                            query: query.query,
-                            url: query.url,
-                            language: query.language,
-                            code: query.code
-                        },
-                        error: new Error("No response from any model")
-                    }
-                  }
-
-                  if(orchResult.result.length===1){
-                    return {
-                        conversationId: conversationId,
-                        query: {
-                            query: query.query,
-                            url: query.url,
-                            language: query.language,
-                            code: query.code
-                        },
-                        response: orchResult.result[0]?.response?.response
-                    }
-                  }
-
-                  
-
-                  const evaluationResult = await this.groqService.evaluate(userId, query, orchResult)  
-                  if(evaluationResult.error){
-                    throw evaluationResult.error;
-                  }
-
-                  return evaluationResult
-            
-        } catch (error) {
-            console.error("Error in OrchestratorService:", error);
-            throw error;
+      if (orchResult.result.length === 0) {
+        return {
+          conversationId: conversationId,
+          query: {
+            query: query.query,
+            url: query.url,
+            language: query.language,
+            code: query.code
+          },
+          error: new Error("No response from any model")
         }
+      }
+
+      if (orchResult.result.length === 1) {
+        return {
+          conversationId: conversationId,
+          query: {
+            query: query.query,
+            url: query.url,
+            language: query.language,
+            code: query.code
+          },
+          response: orchResult.result[0]?.response?.response
+        }
+      }
+
+
+
+      const evaluationResult = await this.groqService.evaluate(userId, query, orchResult)
+      if (evaluationResult.error) {
+        throw evaluationResult.error;
+      }
+
+      return evaluationResult
+
+    } catch (error) {
+      console.error("Error in OrchestratorService:", error);
+      throw error;
     }
-    
+  }
+
 }

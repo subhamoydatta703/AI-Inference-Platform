@@ -10,7 +10,7 @@ import { EVALUATION_SYSTEM_PROMPT } from "../instructions/evaluationInstruction"
 
 export class GroqService {
     private readonly client;
-
+private readonly TIMEOUT_MS=10000
     constructor() {
         this.client = groq
     }
@@ -31,13 +31,17 @@ export class GroqService {
                         content: JSON.stringify(userQuery),
                     },
                 ],
-                model: model,
+                model: model,}
+            , {timeout: this.TIMEOUT_MS})
+            
+            
+                
                 
                 
                 
                 
     
-            })
+        
             console.log("Response from GroqService:",{
                 model: model,
                 userId: userId,
