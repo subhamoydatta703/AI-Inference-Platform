@@ -5,4 +5,5 @@ export const QuerySchema = z.object({
     language: z.string().trim().optional(),
     code: z.string().optional(),
     url: z.string().url().optional(),
+    responseType: z.enum(["text","json"]).default("text").optional()
 });

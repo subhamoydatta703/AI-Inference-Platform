@@ -7,4 +7,5 @@ export interface QueryFormat {
     url?: string;
     language?: string;
     code?: string;
+    responseType?: "text" | "json";
 }

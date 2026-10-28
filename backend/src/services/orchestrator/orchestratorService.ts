@@ -1,4 +1,5 @@
 
+
 import type { EvaluationResultFormat } from "../../utils/types/evaluation/evaluationResult";
 import type { OrchestratorResultFormat } from "../../utils/types/orchestrator/orchestratorResult";
 import type { QueryFormat } from "../../utils/types/query/queryFormat";
@@ -34,6 +35,7 @@ export class OrchestratorService {
         url: userQuery?.url,
         language: userQuery?.language,
         code: userQuery?.code,
+        responseType: userQuery.responseType || "text"
       }
 
       // run all three models in parallel and wait for all to finish
@@ -49,13 +51,16 @@ export class OrchestratorService {
         result: []
       }
 
-      if (result1.status === "fulfilled") {
+      if (result1.status === "fulfilled" && !result1.value.error && result1.value.response !== null && result1.value.response !== undefined) {
+
+        // const query
+
         orchResult.result.push({ model: "openai/gpt-oss-20b", response: result1.value })
       }
-      if (result2.status === "fulfilled") {
+      if (result2.status === "fulfilled" && !result2.value.error && result2.value.response !== null && result2.value.response !== undefined) {
         orchResult.result.push({ model: "openai/gpt-oss-120b", response: result2.value })
       }
-      if (result3.status === "fulfilled") {
+      if (result3.status === "fulfilled" && !result3.value.error && result3.value.response !== null && result3.value.response !== undefined) {
         orchResult.result.push({ model: "nvidia/nemotron-3-ultra-550b-a55b:free", response: result3.value })
       }
 
@@ -81,11 +86,13 @@ export class OrchestratorService {
             language: query.language,
             code: query.code
           },
-          response: orchResult.result[0]?.response?.response
+          rawText: orchResult.result[0]?.response.rawText,
+          response: orchResult.result[0]?.response.response,
+          
         }
       }
 
-
+      
 
       const evaluationResult = await this.groqService.evaluate(userId, query, orchResult)
       if (evaluationResult.error) {

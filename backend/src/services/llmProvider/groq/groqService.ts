@@ -6,6 +6,7 @@ import type { OrchestratorResultFormat } from "../../../utils/types/orchestrator
 import { type QueryFormat } from "../../../utils/types/query/queryFormat";
 import { SYSTEM_PROMPT } from "../instructions/llmInstruction";
 import { EVALUATION_SYSTEM_PROMPT } from "../instructions/evaluationInstruction";
+import { toJson } from "../../../utils/response/jsonFormat";
 
 
 export class GroqService {
@@ -18,12 +19,13 @@ private readonly TIMEOUT_MS=10000
     // query
     async generateResponse(userId:string, userQuery: QueryFormat, model: string): Promise<llmResponseFormat> {
 
-
-    
+        
+        
+        
         try {
             
             const response = await this.client.chat.completions.create({
-    
+                
                 messages: [
                     { role: "system", content: SYSTEM_PROMPT },
                     {
@@ -32,9 +34,12 @@ private readonly TIMEOUT_MS=10000
                     },
                 ],
                 model: model,}
-            , {timeout: this.TIMEOUT_MS})
-            
-            
+                , {timeout: this.TIMEOUT_MS})
+                
+                
+                const resType = userQuery.responseType
+
+                const modelResponse = resType === "json" ? toJson(response.choices[0]?.message?.content!) : response.choices[0]?.message?.content || ""
                 
                 
                 
@@ -46,13 +51,15 @@ private readonly TIMEOUT_MS=10000
                 model: model,
                 userId: userId,
                 query: userQuery,
-                response: response.choices[0]?.message?.content || "",
+                rawText: response.choices[0]?.message?.content || "",
+                response: modelResponse,
             });
     
             return {
                 userId: userId,
                 query: userQuery,
-                response: response.choices[0]?.message?.content || "",
+                rawText: response.choices[0]?.message?.content || "",
+                response: modelResponse,
             }
             
         } catch (error) {
@@ -85,6 +92,10 @@ private readonly TIMEOUT_MS=10000
     
             })
 
+            const resType = query.responseType
+
+            const evalResponse = resType === "json" ? toJson(response.choices[0]?.message?.content || "") : response.choices[0]?.message?.content || ""
+            
             return{
                 conversationId: query.conversationId!,
                 query: {
@@ -94,7 +105,9 @@ private readonly TIMEOUT_MS=10000
                     url: query.url,
 
                 },
-                response: response.choices[0]?.message?.content || "",
+                rawText: response.choices[0]?.message?.content || "",
+                response: evalResponse,
+            
             }
         } catch (error) {
             console.error("Error in GroqService:", error);
