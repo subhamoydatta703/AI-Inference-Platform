@@ -94,7 +94,7 @@ export class OrchestratorService {
 
       
 
-      const evaluationResult = await this.groqService.evaluate(userId, query, orchResult)
+      const evaluationResult = await this.groqService.evaluate(query, orchResult)
       if (evaluationResult.error) {
         throw evaluationResult.error;
       }
