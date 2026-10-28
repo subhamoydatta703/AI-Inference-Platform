@@ -66,14 +66,13 @@ const modelResponse = resType === "json" ? toJson(response) : response || ""
 
  console.log("Response from OpenRouterService:",{
                 model: model,
-                userId: userId,
                 query: userQuery,
                 rawText: response,
                 response: modelResponse,
             });
     
             return {
-                userId: userId,
+                
                 query: userQuery,
                 rawText: response,
                 response: modelResponse,

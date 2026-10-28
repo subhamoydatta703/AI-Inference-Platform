@@ -56,7 +56,7 @@ private readonly TIMEOUT_MS=10000
             });
     
             return {
-                userId: userId,
+                
                 query: userQuery,
                 rawText: response.choices[0]?.message?.content || "",
                 response: modelResponse,
@@ -64,17 +64,13 @@ private readonly TIMEOUT_MS=10000
             
         } catch (error) {
             console.error("Error in GroqService:", error);
-            return {
-                userId: userId,
-                query: userQuery,
-                error: error as Error,
-            };
+            throw error;
         }
 
     }
 
     // evaluate
-    async evaluate(userId: string, query: QueryFormat,  result:OrchestratorResultFormat, SYSTEM_PROMPT=EVALUATION_SYSTEM_PROMPT): Promise<EvaluationResultFormat>{
+    async evaluate(query: QueryFormat,  result:OrchestratorResultFormat, SYSTEM_PROMPT=EVALUATION_SYSTEM_PROMPT): Promise<EvaluationResultFormat>{
         try {
              const response = await groq.chat.completions.create({
     
