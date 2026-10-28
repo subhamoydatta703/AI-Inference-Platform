@@ -3,6 +3,7 @@ import type { QueryFormat } from '../../../utils/types/query/queryFormat';
 import type { llmResponseFormat } from '../../../utils/types/llm/llmResponse';
 import { openRouter } from '../../../config/llm/llmConfig';
 import { SYSTEM_PROMPT } from '../instructions/llmInstruction';
+import { toJson } from '../../../utils/response/jsonFormat';
 
 
 
@@ -55,17 +56,27 @@ for await (const chunk of stream) {
   }
 }
 
+
+
+const resType = userQuery.responseType
+
+const modelResponse = resType === "json" ? toJson(response) : response || ""
+
+
+
  console.log("Response from OpenRouterService:",{
                 model: model,
                 userId: userId,
                 query: userQuery,
-                response: response || "",
+                rawText: response,
+                response: modelResponse,
             });
     
             return {
                 userId: userId,
                 query: userQuery,
-                response: response || "",
+                rawText: response,
+                response: modelResponse,
             }
             
         } catch (error) {

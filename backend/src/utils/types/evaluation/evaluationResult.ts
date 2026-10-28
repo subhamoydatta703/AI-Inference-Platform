@@ -6,6 +6,7 @@ conversationId: string,
     language?: string;
     code?: string;
   },
-  response?: string,
+  rawText?: string,
+  response?: unknown,
   error?: Error
 }

@@ -35,6 +35,7 @@ export const queryController = async(req: AuthenticatedRequest, res: Response)=>
             url: queryData?.url,
             language: queryData?.language,
             code: queryData?.code,
+            responseType: queryData?.responseType || "text"
         }
 
 
