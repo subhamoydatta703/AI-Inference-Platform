@@ -38,7 +38,7 @@ export default function LandingPage() {
         <div className="section-intro"><span className="eyebrow">FROM QUESTION TO ANSWER</span><h2>Intelligence is a process.</h2><p>A structured workflow turns your context into a considered response.<br className="desktop-only" /> Your team integrates once. Inference handles the coordination.</p></div>
         <div className="query-flow-panel">
           <div className="feature-product-header"><span className="architecture-label"><Icon name="terminal" size={17} /> The current query flow</span><span className="tag">MANAGED ORCHESTRATION</span></div>
-          <ol className="landing-query-flow">{orchestrationStages.map((stage, index) => <li key={stage.title}><div className="flow-step-top"><span className="pipeline-icon"><Icon name={stage.icon} size={20} /></span><span className="flow-number">0{index + 1}</span></div><h3>{stage.title}</h3><p>{stage.description}</p>{stage.title === "Model responses" && <ModelNames />}</li>)}</ol>
+          <ol className="landing-query-flow">{orchestrationStages.map((stage, index) => <li key={stage.title}><div className="flow-step-top"><span className="pipeline-icon"><Icon name={stage.icon} size={20} /></span><span className="flow-number">0{index + 1}</span></div><h3>{stage.title}</h3><p>{stage.description}</p>{stage.title === "Model responses" }</li>)}</ol>
           <div className="query-flow-footer"><span><Icon name="shield" size={15} /> Original context stays at the center of the workflow.</span><Link className="text-button" href="/console#docs">View API documentation <Icon name="arrow" size={15} /></Link></div>
         </div>
       </section>
