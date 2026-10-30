@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 import { prisma } from "../../config/db/dbConfig";
+import { Prisma } from "../../../generated/prisma/client";
 
 
 
@@ -39,7 +40,7 @@ export const createApiKeyService = async (userId: string) => {
     const hashedApiKey = hashApiKey(generatedApiKey);
 
     // using transaction for race condition
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // check the count of existing user's api key and update apikey count
       const apiKeyCount = await tx.apiKey.count({
         where: {
