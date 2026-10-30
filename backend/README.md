@@ -12,6 +12,7 @@ See the [project overview](../README.md) for the complete setup flow and the [fr
 - [Service architecture](#service-architecture)
 - [API routes](#api-routes)
 - [Orchestration and evaluation](#orchestration-and-evaluation)
+- [Output guardrail and safety](#output-guardrail-and-safety)
 - [Rate limiting](#rate-limiting)
 - [Source layout](#source-layout)
 - [Errors and CORS](#errors-and-cors)
@@ -75,7 +76,8 @@ flowchart TD
     Validation --> Queue[Orchestration queue]
     Queue --> Providers[Parallel Groq and OpenRouter calls]
     Providers --> Select[Candidate selection and evaluation]
-    Select --> Output[Complete JSON response]
+    Select --> Guardrail[Output Guardrail & Secret Scanner]
+    Guardrail --> Output[Complete JSON response]
 ```
 
 Authentication resolves the account before the shared rate limiters run. Account operations use PostgreSQL; valid queries enter a process-local orchestration queue before contacting inference providers.
@@ -197,6 +199,44 @@ If the evaluator finds no acceptable candidate, it is instructed to return `No a
 
 Provider credentials stay in the backend. OpenRouter streaming is consumed internally; the public query endpoint does not stream tokens to clients.
 
+## Output guardrail and safety
+
+Before any response is delivered to the user (both single-candidate fallbacks and evaluated outputs), it is processed through a two-stage output guardrail:
+
+```mermaid
+flowchart TD
+    Candidate[Selected or Single Candidate Response] --> Scanner[Deterministic Secret Scanner]
+    Scanner -->|Secrets Detected| Blocked["Sorry we can't generate this response"]
+    Scanner -->|No Secrets| Evaluator[Groq openai/gpt-oss-safeguard-20b]
+    Evaluator -->|Unsafe Content| Blocked
+    Evaluator -->|Safe Content| Verified[Deliver Final Response to User]
+```
+
+1. **Secret Credential Scanner (`src/services/guardrail/secretScaner/secretScanner.ts`)**:
+   - High-precision regex scanning for leaked API keys, tokens, and sensitive secrets (OpenAI, Anthropic, Groq, GitHub tokens, Google API keys, AWS credentials, private keys, database connection strings, JWTs).
+   - If any exposed credential is detected, the response is blocked immediately without sending secrets to any external service.
+
+2. **AI Safeguard Model (`openai/gpt-oss-safeguard-20b` via Groq)**:
+   - Driven by `OUTPUT_GUARDRAIL_INSTRUCTION` in `src/services/guardrail/instruction/instruction.ts`.
+   - Enforces a zero-tolerance policy against:
+     - Cybersecurity exploits, malware, injection payloads, or attack tutorials.
+     - Chemical, biological, radiological, nuclear hazards, weapons, and self-harm.
+     - Illegal activities, fraud, or controlled substances.
+     - Hate speech, harassment, severe toxicity, and CSAM/CSAE.
+     - Safety jailbreaks, inverted personas, or bypass attempts.
+
+3. **Guaranteed Output Guarantee**:
+   - If the guardrail flags a response as unsafe or containing credentials, the platform returns:
+     ```json
+     {
+       "conversationId": "<conversation-uuid>",
+       "query": { "query": "..." },
+       "rawText": "Sorry we can't generate this response",
+       "response": "Sorry we can't generate this response"
+     }
+     ```
+   - Valid responses proceed unaltered.
+
 ## Rate limiting
 
 `src/middlewares/rateLimit/rateLimitMiddleware.ts` exports two shared `express-rate-limit` instances:
@@ -238,6 +278,7 @@ Counters use the default in-memory store and reset on process restart. Multiple 
 | `src/config/concurrency/` | Process-local orchestration concurrency limit |
 | `src/utils/response/jsonFormat.ts` | Parse answer text as JSON with null on failure |
 | `src/services/` | Account persistence, key lifecycle, orchestration, and inference calls |
+| `src/services/guardrail/` | Output guardrail, secret scanner, and strict safety instructions |
 | `src/utils/` | Validation schemas and internal types |
 | `prisma/` | PostgreSQL schema and committed migrations |
 | `integration/` | Integration-example checks and service/database test scenarios |
