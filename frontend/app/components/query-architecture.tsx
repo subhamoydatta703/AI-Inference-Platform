@@ -22,7 +22,7 @@ export function ModelRoster() {
 
 export function EvaluationArchitecture() {
   return <div className="evaluation-architecture">
-    <div className="evaluation-intro"><span className="architecture-label"><Icon name="shield" size={16} /> EVALUATION LAYER</span><h3>Every answer earns its place.</h3><p>Candidate responses are reviewed against the original request. The best acceptable answer is selected and delivered in its original form.</p></div>
+    <div className="evaluation-intro"><span className="architecture-label"><Icon name="shield" size={16} /> EVALUATION LAYER</span><h3>From candidates to one answer.</h3><p>When multiple candidates are available, they are reviewed against the original request. A single available candidate is returned directly without evaluation.</p></div>
     <ol className="evaluation-checks">
       {[
         ["Validate", "Exclude failed, empty, or mismatched responses."],

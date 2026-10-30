@@ -21,9 +21,9 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <h2>Send a query. Receive an evaluated answer.</h2>
           <p>
             Send a query with optional code, language, and a URL. The current
-            platform coordinates three candidate answers,
-            evaluates them against your original query, and returns the best
-            acceptable answer unchanged. You do not select a model.
+            platform calls three candidate models in parallel. When multiple
+            answers are available, it evaluates them against your original query.
+            A single available answer is returned directly. You do not select a model.
           </p>
         </div>
         <div className="availability-notice">
@@ -65,7 +65,7 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
               <h3>Receive the evaluated answer</h3>
               <p>
                 Both examples print the complete JSON response. Read
-                data.response for the selected answer (Markdown by default),
+                data.response for the selected answer (text by default),
                 data.query for the original query, and data.conversationId for
                 its identifier. Model rankings and user IDs are not part of
                 this response. Each request starts a new conversation;
@@ -143,9 +143,10 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             </div>
             <p>
               The API returns a JSON object. data.response contains the selected
-              answer text, preserving its original format; escaped newlines such
-              as {"\\n"} are normal inside JSON strings. Answers use Markdown by
-              default; render that field according to the format you requested.
+              answer: a string in text mode, or parsed JSON in JSON mode.
+              data.rawText, when present, contains the answer before parsing.
+              Escaped newlines such as {"\\n"} are normal inside JSON strings.
+              The echoed data.query does not include responseType.
             </p>
             <pre className="code-block">
               <code>{JSON.stringify(exampleResponse, null, 2)}</code>
@@ -165,6 +166,12 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
             query is required and must contain non-whitespace text. Omit
             unused optional fields; url must be a valid URL if provided.
             A URL is passed as context; its contents are not fetched.
+          </p>
+          <p>
+            Set <code>responseType</code> to <code>text</code> (the default) or
+            {" "}<code>json</code>. For JSON mode, describe the desired JSON
+            structure in your query. Invalid JSON can produce a null answer;
+            check the returned answer before using it.
           </p>
         </section>
         <section className="panel">
@@ -187,12 +194,17 @@ export function IntegrationDocs({ copy }: { copy: (value: string) => void }) {
           <p>Each account can make 10 requests per minute and 100 per day, shared
             across its keys and authenticated routes. On HTTP 429, wait for the
             number of seconds in the Retry-After header before retrying.</p>
-          <p>Candidate calls run sequentially, followed by evaluation. Failed or
-            blank candidates are passed to the evaluator for exclusion; an evaluation
-            failure returns 500. If no candidate is acceptable, data.response contains
-            {" "}<code>No acceptable candidate answer is available.</code> in a successful response.</p>
+          <p>Candidate calls run in parallel. Failed calls and null or undefined
+            answers are excluded before evaluation. Multiple remaining candidates
+            are evaluated; a single remaining candidate is returned directly.
+            An evaluation failure returns 500.</p>
+          <p>If all candidates fail, the current backend can return HTTP 200 with
+            success set to true, data.error, and no data.response. The examples
+            reject this result and null answers. Do not treat HTTP 200 alone as
+            proof that an answer is available.</p>
           <p>The endpoint returns one complete JSON response; it does not stream
-            tokens to clients. Requests may take longer than a single model call; the examples use
+            tokens to clients. Queries are queued with one orchestration request
+            active at a time. Requests may take longer than a single model call; the examples use
             a 120-second client timeout, which you can adjust for your deployment.</p>
         </section>
         <section className="panel">

@@ -148,7 +148,8 @@ test("docs contain only Python and TypeScript and copy the live backend contract
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText("No acceptable candidate answer is available.", { exact: true })).toBeVisible();
+  await expect(page.getByText("If all candidates fail, the current backend", { exact: false })).toBeVisible();
+  await expect(page.getByText("Set responseType to text", { exact: false })).toBeVisible();
   await expect(page.getByText("On HTTP 429, wait for the", { exact: false })).toBeVisible();
   await expectFitsViewport(page);
   await page.screenshot({
@@ -166,7 +167,7 @@ test("models reflect the backend and history stays unavailable with working acco
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "GPT-OSS 120B", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Nemotron 3 Ultra", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Every answer earns its place.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "From candidates to one answer.", exact: true })).toBeVisible();
   await expect(page.getByRole("main")).not.toContainText(/Groq|OpenRouter|conversation ID/);
   await expect(page.locator(".evaluation-architecture")).not.toContainText(/GPT-OSS|Nemotron/);
   await expect(page.getByText("qwen/qwen3.8-27b", { exact: false })).toHaveCount(0);

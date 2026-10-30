@@ -5,13 +5,15 @@ export const exampleQuery = {
   language: "javascript",
   code: "function first(items) { return items[0].name; }",
   url: "https://example.com/docs",
+  responseType: "text",
 };
 export const exampleResponse = {
   success: true,
   message: "Query processed successfully",
   data: {
     conversationId: "<server-generated-uuid>",
-    query: { ...exampleQuery },
+    query: { query: exampleQuery.query, language: exampleQuery.language, code: exampleQuery.code, url: exampleQuery.url },
+    rawText: "<selected answer before JSON parsing>",
     response: "<final evaluated answer>",
   },
 };
@@ -24,7 +26,7 @@ export const shortIntegrationSnippet = [
   '    Authorization: "Bearer " + apiKey,',
   '    "Content-Type": "application/json",',
   "  },",
-  "  body: JSON.stringify({ query, language, code }),",
+  '  body: JSON.stringify({ query, language, code, responseType: "text" }),',
   "});",
 ].join("\n");
 
@@ -45,6 +47,7 @@ payload = {
     "language": "javascript",  # optional
     "code": "function first(items) { return items[0].name; }",  # optional
     "url": "https://example.com/docs",  # optional valid URL
+    "responseType": "text",  # optional: "text" (default) or "json"
 }
 request = Request(
     f"{base_url}${queryPath}",
@@ -60,6 +63,11 @@ try:
         result = json.load(response)
     if not result.get("success"):
         raise RuntimeError(result.get("message", "Query failed"))
+    data = result.get("data")
+    if not isinstance(data, dict) or "error" in data or data.get("response") is None:
+        raise RuntimeError("Platform returned no usable answer")
+    if payload["responseType"] == "text" and not isinstance(data["response"], str):
+        raise RuntimeError("Platform returned an unexpected text answer")
     # data.response is the final evaluated answer.
     # data.conversationId identifies this request's conversation.
     # Print the complete API response as formatted JSON.
@@ -94,7 +102,10 @@ const querySchema = z.object({
   code: z.string().optional(),
   url: z.url().optional(),
 });
-type QueryRequest = z.infer<typeof querySchema>;
+const requestSchema = querySchema.extend({
+  responseType: z.enum(["text", "json"]).default("text"),
+});
+type QueryRequest = z.infer<typeof requestSchema>;
 
 const successSchema = z.object({
   success: z.literal(true),
@@ -102,7 +113,9 @@ const successSchema = z.object({
   data: z.object({
     conversationId: z.uuid(),
     query: querySchema,
-    response: z.string(),
+    rawText: z.string().optional(),
+    response: z.unknown().optional(),
+    error: z.unknown().optional(),
   }),
 });
 type QueryResponse = z.infer<typeof successSchema>;
@@ -111,11 +124,12 @@ const errorSchema = z.object({
   message: z.string(),
 });
 
-const payload: QueryRequest = querySchema.parse({
+const payload: QueryRequest = requestSchema.parse({
   query: "Identify the failure modes in this implementation.",
   language: "javascript", // optional
   code: "function first(items) { return items[0].name; }", // optional
   url: "https://example.com/docs", // optional valid URL
+  responseType: "text", // "text" (default) or "json"
 });
 const response = await fetch(baseUrl + "${queryPath}", {
   method: "POST",
@@ -145,6 +159,13 @@ if (!parsed.success) {
   throw new Error("Platform returned an unexpected response shape");
 }
 const result: QueryResponse = parsed.data;
+// The backend can return success: true with an error and no answer.
+if ("error" in result.data || result.data.response == null) {
+  throw new Error("Platform returned no usable answer");
+}
+if (payload.responseType === "text" && typeof result.data.response !== "string") {
+  throw new Error("Platform returned an unexpected response shape");
+}
 // result.data.response is the final evaluated answer.
 // result.data.conversationId identifies this request's conversation.
 // Print the complete validated API response as formatted JSON.
@@ -153,8 +174,8 @@ console.log(JSON.stringify(result, null, 2));`;
 
 export const orchestrationStages = [
   { icon: "book", title: "Query & context", description: "Start with a question. Add code, a language, or reference context." },
-  { icon: "terminal", title: "Orchestration", description: "One request coordinates three models through a managed workflow." },
+  { icon: "terminal", title: "Orchestration", description: "One request calls three candidate models in parallel." },
   { icon: "cube", title: "Model responses", description: "Three distinct perspectives address the same question and context." },
-  { icon: "shield", title: "Evaluation", description: "Candidate answers are assessed for correctness, relevance, and completeness." },
+  { icon: "shield", title: "Evaluation", description: "Multiple available answers are evaluated; a single available answer is returned directly." },
   { icon: "bolt", title: "Final answer", description: "The strongest acceptable response is selected and delivered to your application." },
 ] as const;

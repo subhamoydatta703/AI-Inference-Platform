@@ -1,8 +1,33 @@
-# Inference frontend
+# Inference Frontend
 
-Responsive Next.js 16 and React 19 website and developer console for the Inference platform. The charcoal and indigo SaaS design uses Geist typography, Lucide icons, and shared components for the model ensemble and evaluation architecture.
+The public website and developer console for Inference, built with **Next.js 16, React 19, TypeScript, and Clerk**. It introduces the multi-model workflow, guides developers through API integration, and connects account and API-key management to the Express backend.
+
+A shared charcoal and indigo interface brings together responsive navigation, Geist typography, Lucide icons, model architecture views, and copyable Python/TypeScript examples.
 
 See the [project overview](../README.md) for the complete setup flow and the [backend README](../backend/README.md) for database setup, the API contract, authentication, and request limits.
+
+## Contents
+
+- [Features](#features)
+- [Run locally](#run-locally)
+- [Application architecture](#application-architecture)
+- [Routes and navigation](#routes-and-navigation)
+- [Connected account and API keys](#connected-account-and-api-keys)
+- [Integrating your application](#integrating-your-application)
+- [Source layout](#source-layout)
+- [Troubleshooting](#troubleshooting)
+- [Checks](#checks)
+
+## Features
+
+| Area | Experience |
+| --- | --- |
+| Product website | Platform overview, query workflow, model ensemble, and FAQ |
+| Developer console | Hash navigation, searchable sections, and mobile menu |
+| Account | Clerk sign-in and synchronized backend profile with retry controls |
+| API keys | Create, copy newly revealed secrets, list metadata, and revoke keys |
+| Integration docs | Python/TypeScript tabs, clipboard actions, payload reference, and error guidance |
+| Architecture | Shared model roster and conditional evaluation explanation |
 
 ## Run locally
 
@@ -30,6 +55,17 @@ Use a publishable key from the same Clerk application as the backend. Open [the 
 
 The public pages and documentation render without Clerk configured. Sign-in and connected account/key management require the publishable key. Browser sign-in and direct API requests do not require a frontend Clerk secret. Optional Next.js server-side authentication and the `/api/me` proxy require `CLERK_SECRET_KEY`; the proxy origin uses `BACKEND_URL`, defaulting to `http://localhost:5000`. See [.env.example](.env.example).
 
+### Environment reference
+
+| Variable | Required for | Visibility |
+| --- | --- | --- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Sign-in and connected account/key pages | Public browser configuration |
+| `NEXT_PUBLIC_BACKEND_URL` | Direct backend requests; defaults to localhost:5000 | Public browser configuration |
+| `CLERK_SECRET_KEY` | Optional server authentication and `/api/me` proxy | Server only |
+| `BACKEND_URL` | Optional profile proxy origin; defaults to localhost:5000 | Server only |
+
+Platform API keys used by integrating applications belong in those applications' server environments. Inference provider keys belong in the Express backend.
+
 For a production build:
 
 ```powershell
@@ -38,6 +74,26 @@ bun run start
 ```
 
 The build downloads Geist fonts through `next/font/google`, so Google Fonts must be reachable.
+
+## Application architecture
+
+```mermaid
+flowchart LR
+    Visitor[Visitor] --> Landing[Product website]
+    Visitor --> Console[Developer console]
+    Console --> Public[Docs and model architecture]
+    Console --> Clerk[Clerk session]
+    Clerk --> Profile[Account profile]
+    Clerk --> Keys[API-key management]
+    Profile --> Client[Authenticated API client]
+    Keys --> Client
+    Client --> Backend[Express backend]
+    Public --> Snippets[Copyable integration examples]
+    Snippets -.-> App[Developer application backend]
+    App -->|Platform API key| Query[Inference query API]
+```
+
+The browser uses Clerk session tokens for account and key management. Inference requests originate in integrating applications' backends. The optional `/api/me` route supports a server-side profile proxy; the connected account page normally calls Express directly.
 
 ## Routes and navigation
 
@@ -58,9 +114,9 @@ The console uses hash navigation rather than separate pages for each section. Le
 
 The public query workflow is:
 
-**Query and context → orchestration → model responses → evaluation → final answer.**
+**Query and context > parallel model calls > evaluation when multiple answers remain > final answer.**
 
-The three candidate models are **GPT-OSS 20B**, **GPT-OSS 120B**, and **Nemotron 3 Ultra**. Model coordination is automatic. The evaluation section describes validation, assessment, and selection without naming its model. Product-facing workflow sections omit provider details and conversation identifiers. Technical response fields remain in the integration reference so the examples match the backend contract.
+The three candidate models are **GPT-OSS 20B**, **GPT-OSS 120B**, and **Nemotron 3 Ultra**. Candidate calls run in parallel, with one orchestration request active at a time. Multiple available candidates are evaluated; a single available candidate is returned directly. Model coordination is automatic. The evaluation section describes validation, assessment, and selection without naming its model. Product-facing workflow sections omit provider details and conversation identifiers. Technical response fields remain in the integration reference so the examples match the backend contract.
 
 The landing page includes a split hero, architecture summary, five-stage workflow, model cards, evaluation layer, developer integration cards, console illustration, FAQ, and calls to open the console or documentation. The console shares the same visual foundations, including responsive cards, loading/error/empty states, and a getting-started panel.
 
@@ -89,7 +145,27 @@ INFERENCE_API_KEY=your_platform_api_key
 
 `INFERENCE_BASE_URL` is the Express backend origin, without an API path. Keep the key server-side. The TypeScript example requires `zod` in the integrating application (`bun add zod` or `npm install zod`); the frontend itself does not need it to display the snippet.
 
-Send a required non-empty `query` and optional `language`, `code`, and valid `url`. Read `data.response` for the selected answer and `data.query` for the original input. The response also carries `data.conversationId` as technical metadata. Answers use Markdown by default and retain the selected candidate's format. Each request is independent: persisted conversation history, follow-up context, and URL fetching are not implemented. The endpoint returns complete JSON rather than streaming tokens.
+The query request accepts these fields:
+
+| Field | Description |
+| --- | --- |
+| `query` | Required non-empty question |
+| `language` | Optional language context |
+| `code` | Optional source code |
+| `url` | Optional valid reference URL; its contents are not fetched |
+| `responseType` | Optional `text` (default) or `json` |
+
+Read `data.response` for the answer, `data.query` for the original input context, and `data.conversationId` for the request identifier. Optional `data.rawText` holds the answer before JSON parsing. The echoed query omits `responseType`.
+
+Each request is independent: persisted history, follow-up context, and URL fetching are not implemented. Responses arrive as complete JSON rather than streamed tokens.
+
+### Response modes and validation
+
+The copyable examples default to `responseType: "text"`. Change that value to `"json"` and request your desired JSON structure in the query to receive parsed JSON. JSON mode does not guarantee a particular schema; validate the result against your application's requirements. JSON parse failures can return null.
+
+Both examples reject `data.error` and missing/null answers, including the current backend's HTTP 200 envelope when all candidates fail. Text mode also requires a string answer. The TypeScript example validates the response envelope with Zod while allowing JSON values in `data.response` and preserving optional `data.rawText`.
+
+Multiple available candidates are evaluated; a single available candidate bypasses evaluation. Queries can wait in the backend's process-local queue before execution, so adjust the examples' 120-second timeout for your deployment. HTTP 200 alone does not guarantee a usable answer.
 
 ## Source layout
 
@@ -146,6 +222,8 @@ $env:AUTH_TEST_BASE_URL = 'http://localhost:3000'
 bun run test:auth
 ```
 
-Latest redesign verification: production build, lint, TypeScript, 11 API unit tests, and 10 desktop/mobile browser tests passed. Live sign-in, authenticated key mutations, inference, and real rate-limit recovery were not exercised by that visual verification.
+Latest backend-alignment verification: production build, lint, TypeScript, 11 API unit tests, 7 integration-example tests, and 10 desktop/mobile browser tests passed. Live sign-in, authenticated key mutations, inference, and real rate-limit recovery were not exercised.
+
+Run the copyable TypeScript example checks from `backend/` with `bun test integration/queryDocs.test.ts`. These use the backend's Zod dependency and mocked HTTP responses to verify text/JSON output, raw text, HTTP 200 error results, malformed responses, and environment validation.
 
 See [DESIGN.md](DESIGN.md) for design decisions and [design-qa.md](design-qa.md) for screenshots, comparisons, and verification details.

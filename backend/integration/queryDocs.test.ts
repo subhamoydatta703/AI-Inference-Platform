@@ -26,10 +26,11 @@ const success = {
 async function executeExample(response: Response, env: Record<string, string | undefined> = {
   INFERENCE_BASE_URL: "http://localhost:5000/",
   INFERENCE_API_KEY: "test-platform-key",
-}) {
+}, responseType: "text" | "json" = "text") {
   const request = mock(async (_url: string, _options: RequestInit) => response);
   const log = mock((_value: unknown) => {});
-  const source = snippet.replace('import { z } from "zod";', "");
+  const source = snippet.replace('import { z } from "zod";', "")
+    .replace('responseType: "text", //', `responseType: "${responseType}", //`);
   const compiled = ts.transpileModule(source, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }).outputText;
@@ -77,6 +78,28 @@ describe("copyable TypeScript query example", () => {
       ...success, data: { query: { ...success.data.query, conversationId }, response: "Old response shape" },
     }]) {
       await expect(executeExample(Response.json(body))).rejects.toThrow("unexpected response shape");
+    }
+  });
+
+  test("accepts structured JSON answers and preserves rawText", async () => {
+    for (const answer of [{ findings: ["Empty array"] }, [1, 2], false, 0, "answer"]) {
+      const body = { ...success, data: { ...success.data, response: answer, rawText: JSON.stringify(answer) } };
+      const { log } = await executeExample(Response.json(body), undefined, "json");
+      expect(JSON.parse(log.mock.calls[0]![0] as string)).toEqual(body);
+    }
+  });
+
+  test("rejects HTTP 200 results with errors or missing and null answers", async () => {
+    for (const data of [
+      { ...success.data, error: {} },
+      { conversationId, query: success.data.query, error: {} },
+      { conversationId, query: success.data.query },
+      { ...success.data, response: null },
+    ]) {
+      for (const mode of ["text", "json"] as const) {
+        await expect(executeExample(Response.json({ ...success, data }), undefined, mode))
+          .rejects.toThrow("no usable answer");
+      }
     }
   });
 
