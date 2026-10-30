@@ -1,8 +1,22 @@
-# Inference backend
+# Inference Backend
 
-Express API for account synchronization, application API keys, and multi-model query orchestration. It runs on Bun, uses PostgreSQL through Prisma, and listens on port **5000**.
+The HTTP API and orchestration engine behind Inference. Built with **Bun, TypeScript, Express, Prisma, and PostgreSQL**, it manages developer accounts and application credentials, dispatches parallel model requests, and returns a selected answer through one query endpoint.
+
+The service listens on **port 5000**. Clerk session tokens authenticate account operations; platform API keys authenticate inference requests. Provider credentials remain on the server.
 
 See the [project overview](../README.md) for the complete setup flow and the [frontend README](../frontend/README.md) for the website and developer console.
+
+## Contents
+
+- [Local setup](#local-setup)
+- [Service architecture](#service-architecture)
+- [API routes](#api-routes)
+- [Orchestration and evaluation](#orchestration-and-evaluation)
+- [Rate limiting](#rate-limiting)
+- [Source layout](#source-layout)
+- [Errors and CORS](#errors-and-cors)
+- [Checks](#checks)
+- [Operational considerations](#operational-considerations)
 
 ## Local setup
 
@@ -25,7 +39,16 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
 ```
 
-Generate the Prisma client, apply the existing migrations, and start the API:
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `CLERK_PUBLISHABLE_KEY` | Shared Clerk application's publishable key |
+| `CLERK_SECRET_KEY` | Server-side Clerk verification |
+| `GROQ_API_KEY` | Groq candidate generation and evaluation |
+| `OPENROUTER_API_KEY` | OpenRouter candidate generation |
+| `CORS_ORIGINS` | Comma-separated allowed frontend origins |
+
+Keep `.env` and provider credentials out of version control. Generate the Prisma client, apply the existing migrations, and start the API:
 
 ```powershell
 bunx prisma generate
@@ -36,6 +59,26 @@ bun run dev
 `bun run dev` starts `src/server.ts` with file watching. Bun loads `.env` for this command. Check `GET http://localhost:5000/health`; the response is `{ "status": "ok" }`.
 
 Configure Clerk session claims to include the signed-in user's email in the `email` claim. The authentication middleware uses it when initializing a user's local profile. Use the same Clerk application for the backend and frontend. Provider configuration is loaded when a valid query executes, rather than for account and health requests.
+
+## Service architecture
+
+```mermaid
+flowchart TD
+    Session[Clerk session token] --> Account[Profile and API-key routes]
+    Key[Platform API key] --> Query[Query route]
+    Account --> Identity[Verified user identity]
+    Query --> Identity
+    Identity --> Limits[Minute and daily rate limits]
+    Limits --> AccountWork[Account and key operations]
+    Limits --> Validation[Query validation]
+    AccountWork --> DB[(PostgreSQL / Prisma)]
+    Validation --> Queue[Orchestration queue]
+    Queue --> Providers[Parallel Groq and OpenRouter calls]
+    Providers --> Select[Candidate selection and evaluation]
+    Select --> Output[Complete JSON response]
+```
+
+Authentication resolves the account before the shared rate limiters run. Account operations use PostgreSQL; valid queries enter a process-local orchestration queue before contacting inference providers.
 
 ## API routes
 
@@ -75,13 +118,24 @@ Content-Type: application/json
   "query": "Identify the failure modes in this implementation.",
   "language": "javascript",
   "code": "function first(items) { return items[0].name; }",
-  "url": "https://example.com/docs"
+  "url": "https://example.com/docs",
+  "responseType": "text"
 }
 ```
 
-`query` is required and must contain non-whitespace text. `language`, `code`, and `url` are optional; omit unused fields. A supplied URL must be valid. `query` and `language` are trimmed. URLs are passed as reference context; their contents are not fetched.
+`query` is required and must contain non-whitespace text. `language`, `code`, `url`, and `responseType` are optional; omit unused fields. A supplied URL must be valid. `query` and `language` are trimmed. URLs are passed as reference context; their contents are not fetched.
 
-Successful response:
+`responseType` accepts `text` (default) or `json`. In text mode, `data.response` is a string. In JSON mode, provider and evaluation output is parsed as JSON, so `data.response` can be an object, array, string, number, boolean, or null. Describe the desired JSON structure in your query; choosing JSON mode does not enforce a schema. The parser removes Markdown code fences and returns null if parsing fails.
+
+| Request field | Required | Validation |
+| --- | --- | --- |
+| `query` | Yes | Trimmed, non-empty string |
+| `language` | No | Trimmed string |
+| `code` | No | String |
+| `url` | No | Valid URL; passed as context only |
+| `responseType` | No | `text` or `json`; defaults to text in the controller |
+
+Example text-mode response:
 
 ```json
 {
@@ -95,16 +149,35 @@ Successful response:
       "code": "function first(items) { return items[0].name; }",
       "url": "https://example.com/docs"
     },
+    "rawText": "<selected answer text>",
     "response": "<selected answer text>"
   }
 }
 ```
 
-The endpoint returns one complete JSON response. Answers use Markdown by default and preserve the selected candidate's format. The API does not return candidate responses, user IDs, scores, or model rankings. Each request creates a new conversation identifier; persisted history and conversation continuation are not implemented.
+The endpoint returns one complete JSON response. `data.rawText`, when present, contains the selected answer before JSON parsing. `data.query` omits `responseType`. Text answers may contain Markdown; JSON mode returns the parsed value. The API does not return candidate responses, user IDs, scores, or model rankings. Each request creates a new conversation identifier; persisted history and conversation continuation are not implemented.
+
+For example, send `{"query":"Return a JSON object with a summary field.","responseType":"json"}` for structured output. A usable result could contain `data.response: {"summary":"..."}` and the corresponding JSON text in `data.rawText`.
+
+Check `data.error` and require a non-null `data.response` before using the result, even when HTTP status is 200 and `success` is true. When all candidate calls fail or yield null/undefined answers, the current controller still returns this envelope:
+
+```json
+{
+  "success": true,
+  "message": "Query processed successfully",
+  "data": {
+    "conversationId": "<server-generated-uuid>",
+    "query": { "query": "Your question" },
+    "error": {}
+  }
+}
+```
+
+The empty error object is the serialized JavaScript `Error`; clients should not expect its message to be present. Missing answers and JSON parsing failures must be handled separately from HTTP errors.
 
 ## Orchestration and evaluation
 
-Candidate calls run sequentially:
+Candidate calls run in parallel using `Promise.allSettled`:
 
 | Candidate | Model identifier | Backend service |
 | --- | --- | --- |
@@ -112,7 +185,15 @@ Candidate calls run sequentially:
 | GPT-OSS 120B | `openai/gpt-oss-120b` | Groq |
 | Nemotron 3 Ultra | `nvidia/nemotron-3-ultra-550b-a55b:free` | OpenRouter |
 
-A separate evaluation step checks candidates against the original query for correctness, relevance, completeness, and requested format. It selects an acceptable candidate unchanged rather than merging or rewriting answers. Failed, blank, or mismatched candidates are passed to the evaluator for exclusion. If no candidate is acceptable, its instructed response is `No acceptable candidate answer is available.` inside a successful response. Evaluation failures return HTTP 500.
+Rejected calls, service errors, and null/undefined answers are excluded before selection. Empty text strings are not filtered by the orchestrator.
+
+- No remaining candidates: return `data.error` without `data.response`; the controller currently wraps this in HTTP 200 with `success: true`.
+- One remaining candidate: return its answer and raw text directly without evaluation.
+- Multiple remaining candidates: evaluate them against the original query for correctness, relevance, completeness, and requested format. The evaluator is instructed to select one candidate without merging or rewriting it. Evaluation failures return HTTP 500.
+
+If the evaluator finds no acceptable candidate, it is instructed to return `No acceptable candidate answer is available.` In text mode this is answer text; in JSON mode this non-JSON message parses to null. Clients should handle both cases.
+
+`src/config/concurrency/concurrencyConfig.ts` limits execution to one orchestration request at a time per backend process. Other valid queries wait in the queue; the three provider calls within the active request still run in parallel. This queue is separate from the per-user request limits. Groq candidate calls and OpenRouter streaming have configured 10-second timeouts; queueing and evaluation can make the full HTTP request take longer. The integration examples use an adjustable 120-second client timeout.
 
 Provider credentials stay in the backend. OpenRouter streaming is consumed internally; the public query endpoint does not stream tokens to clients.
 
@@ -154,6 +235,8 @@ Counters use the default in-memory store and reset on process restart. Multiple 
 | `src/middlewares/apiKey/` | Platform-key verification and owner resolution |
 | `src/middlewares/rateLimit/` | Shared per-user minute and daily limiters |
 | `src/controllers/` | Request validation, service calls, and HTTP responses |
+| `src/config/concurrency/` | Process-local orchestration concurrency limit |
+| `src/utils/response/jsonFormat.ts` | Parse answer text as JSON with null on failure |
 | `src/services/` | Account persistence, key lifecycle, orchestration, and inference calls |
 | `src/utils/` | Validation schemas and internal types |
 | `prisma/` | PostgreSQL schema and committed migrations |
@@ -183,6 +266,23 @@ bun test src/utils/validation/user/userValidation.test.ts
 bun test integration/queryDocs.test.ts
 ```
 
+The 7 integration-example tests execute the copyable TypeScript snippet with mocked HTTP and check strict TypeScript compatibility, authentication, text/JSON answers, raw-text preservation, missing/null answers, HTTP 200 error results, malformed data, and environment validation. They do not call inference providers.
+
 The route tests mock database, Clerk verification, and inference calls while exercising the real HTTP routes and rate limiters. They do not validate live credentials or model availability.
 
 `bun test` runs the complete suite. The current `integration/groqCompletion.test.ts` still mocks a default configuration export, while the service imports the named `groq` export; this test needs updating. The opt-in database lifecycle test (`RUN_DATABASE_TESTS=1`) also still assumes five keys, so update it to the enforced three-key limit before using it as a passing integration check.
+
+## Operational considerations
+
+| Concern | Current behavior |
+| --- | --- |
+| Concurrency | One active orchestration per process; candidate calls run in parallel |
+| Rate-limit storage | In-memory counters; restart clears them and replicas do not share them |
+| Response delivery | Complete JSON response; no public token streaming |
+| Conversation state | New identifier per query; no persisted history or continuation |
+| Structured output | JSON parsing without application-specific schema enforcement |
+| Provider failures | Single-candidate fallback; no candidates can still produce an HTTP 200 error payload |
+
+When hosting separately from the frontend, set exact allowed origins in `CORS_ORIGINS`. Allow enough HTTP timeout for queueing, candidate calls, and evaluation. Validate provider credentials and database connectivity in your own environment; mocked route and example checks do not establish live service readiness.
+
+For the developer-facing experience and integration snippets, see the [frontend guide](../frontend/README.md).

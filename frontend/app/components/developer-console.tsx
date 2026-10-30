@@ -309,7 +309,7 @@ export default function Console() {
                   title="Query inference"
                   status="Available"
                   available
-                  text="Three model answers are evaluated into one final response, authenticated with your platform key."
+                  text="Three models run in parallel. Multiple available answers are evaluated; a single available answer is returned directly. Authenticate with your platform key."
                 />
                 <Capability
                   icon="key"
@@ -375,7 +375,7 @@ export default function Console() {
             <>
               <ServiceNotice
                 title="Three perspectives, one evaluated answer"
-                text="Every query follows the same managed workflow. Three models respond to your context; a separate evaluation layer reviews the candidates and selects the best acceptable answer."
+                text="Three models process your context in parallel. Multiple available answers go through evaluation; when only one candidate is available, it is returned directly."
               />
               <section className="panel">
                 <PanelTitle
