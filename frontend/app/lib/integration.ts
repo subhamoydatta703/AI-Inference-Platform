@@ -79,7 +79,7 @@ except URLError as error:
 
   return `// Install: npm install zod (or bun add zod).
 // Run in your backend with environment variables loaded.
-// INFERENCE_BASE_URL is the platform backend origin, e.g. http://localhost:5000.
+// INFERENCE_BASE_URL is the platform backend origin, e.g. https://ai-inference-platform.onrender.com.
 // Create INFERENCE_API_KEY in Console > API keys. Keep it server-side.
 import { z } from "zod";
 
