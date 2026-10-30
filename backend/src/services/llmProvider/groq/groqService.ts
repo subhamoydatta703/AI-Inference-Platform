@@ -11,7 +11,7 @@ import { toJson } from "../../../utils/response/jsonFormat";
 
 export class GroqService {
     private readonly client;
-private readonly TIMEOUT_MS=10000
+private readonly TIMEOUT_MS=35000
     constructor() {
         this.client = groq
     }
