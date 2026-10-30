@@ -5,6 +5,7 @@ import type { OrchestratorResultFormat } from "../../utils/types/orchestrator/or
 import type { QueryFormat } from "../../utils/types/query/queryFormat";
 import { GroqService } from "../llmProvider/groq/groqService";
 import { OpenRouterService } from "../llmProvider/openrouter/openrouterService";
+import { outputGuardrailService } from "../guardrail/outputGuardrail/outputGuardrail";
 
 
 
@@ -78,6 +79,24 @@ export class OrchestratorService {
       }
 
       if (orchResult.result.length === 1) {
+        const singleResponse = orchResult.result[0]?.response.response;
+        const singleRawText = orchResult.result[0]?.response.rawText;
+        const guardrailStatus = await outputGuardrailService.validateOutput(singleRawText || singleResponse);
+
+        if (!guardrailStatus.safe) {
+          return {
+            conversationId: conversationId,
+            query: {
+              query: query.query,
+              url: query.url,
+              language: query.language,
+              code: query.code
+            },
+            rawText: "Sorry we can't generate this response",
+            response: "Sorry we can't generate this response",
+          };
+        }
+
         return {
           conversationId: conversationId,
           query: {
@@ -86,8 +105,8 @@ export class OrchestratorService {
             language: query.language,
             code: query.code
           },
-          rawText: orchResult.result[0]?.response.rawText,
-          response: orchResult.result[0]?.response.response,
+          rawText: singleRawText,
+          response: singleResponse,
           
         }
       }
@@ -97,6 +116,18 @@ export class OrchestratorService {
       const evaluationResult = await this.groqService.evaluate(query, orchResult)
       if (evaluationResult.error) {
         throw evaluationResult.error;
+      }
+
+      const evalResponse = evaluationResult.rawText || evaluationResult.response;
+      const guardrailStatus = await outputGuardrailService.validateOutput(evalResponse);
+
+      if (!guardrailStatus.safe) {
+        return {
+          conversationId: evaluationResult.conversationId,
+          query: evaluationResult.query,
+          rawText: "Sorry we can't generate this response",
+          response: "Sorry we can't generate this response",
+        };
       }
 
       return evaluationResult

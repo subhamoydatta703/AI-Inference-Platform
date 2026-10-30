@@ -30,6 +30,7 @@ The repository includes a responsive website and developer console for onboardin
 | --- | --- |
 | Parallel generation | Three candidate model calls coordinated through one query endpoint |
 | Answer evaluation | A separate selection step when multiple candidates are available |
+| Safety & Guardrails | Secret credential scanner & `openai/gpt-oss-safeguard-20b` output guardrail |
 | Text and JSON modes | Answer text by default, or parsed JSON with `responseType: "json"` |
 | Developer console | Account profile, API-key lifecycle, architecture reference, and integration docs |
 | Credential management | Server-generated API keys, SHA-256 hash storage, and revocation |
@@ -55,7 +56,8 @@ flowchart LR
     Queue --> OpenRouter[OpenRouter candidate model]
     Groq --> Selection[Answer selection]
     OpenRouter --> Selection
-    Selection --> Result[Text or parsed JSON answer]
+    Selection --> Guardrail[Output Guardrail & Secret Scanner]
+    Guardrail --> Result[Text or parsed JSON answer]
     Result --> App
 ```
 
@@ -75,8 +77,11 @@ flowchart TD
     Count -->|Multiple| Evaluate[Evaluate against original request]
     Count -->|One| Direct[Return candidate directly]
     Count -->|None| Error[Return error payload]
-    Evaluate --> Output[Complete JSON envelope]
-    Direct --> Output
+    Evaluate --> Guardrail{Output Guardrail}
+    Direct --> Guardrail
+    Guardrail -->|Safe| Output[Complete JSON envelope]
+    Guardrail -->|Unsafe/Secrets| Blocked["Sorry we can't generate this response"]
+    Blocked --> Output
     Error --> Output
 ```
 
@@ -90,6 +95,7 @@ The queue permits one active orchestration request per backend process. The prov
 | Candidate | `openai/gpt-oss-120b` | Groq |
 | Candidate | `nvidia/nemotron-3-ultra-550b-a55b:free` | OpenRouter |
 | Evaluation | `openai/gpt-oss-120b` | Groq |
+| Output Guardrail | `openai/gpt-oss-safeguard-20b` | Groq |
 
 These identifiers reflect the current source configuration. Evaluation is model-based selection, not a guarantee of correctness or a substitute for application-specific validation.
 
