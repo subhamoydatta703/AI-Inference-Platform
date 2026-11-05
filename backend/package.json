@@ -13,12 +13,17 @@
     "prisma": "7.10.0"
   },
   "scripts": {
-    "dev": "bun --watch run src/server.ts"
+    "dev": "bun --watch run src/server.ts",
+    "typecheck": "bun check",
+    "prisma": "prisma",
+    "prisma:generate": "prisma generate",
+    "generate": "prisma generate"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@autter/runtime-node": "^1.9.0",
     "@clerk/express": "^2.1.79",
     "@openrouter/sdk": "^1.4.25",
     "@prisma/adapter-libsql": "^7.10.0",

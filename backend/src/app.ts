@@ -4,7 +4,7 @@ import userRoutes from './routes/user/userRoutes';
 import apiKeyRoutes from './routes/apiKey/apiKeyRoutes';
 import queryRoutes from './routes/query/queryRoutes';
 import { clerkMiddleware } from '@clerk/express';
-
+import { captureException } from '@autter/runtime-node';
 const app = express();
 
 const allowedOrigins = (
@@ -29,6 +29,22 @@ app.use("/api/v1/queries", queryRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
+
+});
+
+
+app.get('/api/test-autter', (req, res) => {
+  try {
+    throw new Error('Autter verification test error from backend!');
+  } catch (error) {
+    captureException(error, {
+      test: true,
+      timestamp: new Date().toISOString(),
+    });
+    return res.status(500).json({
+      message: 'Test exception submitted to Autter SDK.',
+    });
+  }
 });
 
 export default app;
