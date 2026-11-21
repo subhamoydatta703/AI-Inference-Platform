@@ -6,7 +6,7 @@
       "name": "backend",
       "dependencies": {
         "@clerk/express": "^2.1.79",
-        "@openrouter/sdk": "^1.4.25",
+        "@openrouter/sdk": "^1.5.111",
         "@prisma/adapter-libsql": "^7.10.0",
         "@types/express": "^5.0.6",
         "cors": "^2.8.6",
@@ -80,7 +80,7 @@
 
     "@neon-rs/load": ["@neon-rs/load@0.0.4", "", {}, "sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw=="],
 
-    "@openrouter/sdk": ["@openrouter/sdk@1.4.25", "", { "dependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-H218lYMy9WhU5cMigUvW/k+e1BimCqTTP+9PqssdDXnQ0gFCeEME0HTsFGPbR6UgJgyYh2hTct43/9pMcBem5A=="],
+    "@openrouter/sdk": ["@openrouter/sdk@1.5.111", "", { "dependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-clbOr9wC+DR4J5xtG61ld6SiqMK7j7Y3UmhRoVf2PUloF57UIGOwiywuRQ1z5vSIoXXYAsa3YJET8XJ93WzRww=="],
 
     "@prisma/adapter-libsql": ["@prisma/adapter-libsql@7.10.0", "", { "dependencies": { "@libsql/client": "^0.17.0", "@prisma/driver-adapter-utils": "7.10.0", "async-mutex": "0.5.0" } }, "sha512-ANjUjJ/TrDQhR8jFU8HvYWRdwP17Lox1WL81zZvHcPVeFehZfNomAsPMNY24EBTLLZp0Xw4Na5Zf1S+EuKMKxw=="],
 

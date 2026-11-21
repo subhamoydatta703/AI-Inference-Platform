@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@clerk/express": "^2.1.79",
-    "@openrouter/sdk": "^1.4.25",
+    "@openrouter/sdk": "^1.5.111",
     "@prisma/adapter-libsql": "^7.10.0",
     "@types/express": "^5.0.6",
     "cors": "^2.8.6",
